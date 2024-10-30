@@ -24,12 +24,22 @@
 
 
 
-int main() {
-    FILE *file = fopen("rwims.din", "r");  // Open the file in read mode
+int main(int argc, char *argv[]) {
+    // Set default filename
+    const char *filename = "Default.din";
+
+    // Check if user provided a filename as an argument
+    if (argc > 1) {
+        filename = argv[1];
+    }
+
+    FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
         return 1;
     }
+
+    printf("Using file: %s\n", filename);
 
     int operation;
     unsigned int address;
