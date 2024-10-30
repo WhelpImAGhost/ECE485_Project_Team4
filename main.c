@@ -36,8 +36,11 @@ int main() {
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
+        #ifdef DEBUG
         printf("Operation: %d, Address: 0x%X\n", operation, address);
+        #endif
         // Process the values here if needed
+
     }
 
     fclose(file);  // Close the file
