@@ -53,6 +53,7 @@ int main() {
     return 0;
 }
 */
+//3 arrays and some of them nested.
 
 #include <stdio.h>
 #include <stdint.h>
