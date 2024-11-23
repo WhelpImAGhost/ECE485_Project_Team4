@@ -153,34 +153,23 @@ int main(int argc, char *argv[]) {
 
     int operation;
     unsigned int address;
+    int tag, set_index, byte_select;
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
+        extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
         #ifdef DEBUG
         fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
+        fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
+        fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
+        fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
         #endif
         // Process the values here if needed
     }
 
     fclose(file);  // Close the file
-    return 0;
 
-int tag, set_index, byte_select;
-
-/*Extraction Function Test*/
-
-//Test Address
-unsigned int test_address = 0xFFFFFFFF;
-
-// Call the extraction function
-extract_address_components(test_address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
-
-#ifdef DEBUG
-fprintf(stderr, "Address: 0x%X\n", test_address);
-fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
-fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
-fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
-#endif
+return 0;
 }
 
 // Function declarations
@@ -202,4 +191,3 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
     // Extract tag (remaining bits above index)
     *tag = address >> (byte_select_bits + index_bits);
 }
-
