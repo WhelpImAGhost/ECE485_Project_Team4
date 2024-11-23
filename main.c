@@ -27,7 +27,7 @@ uint64_t counter = 0;
 // Function Prototypes
 
 // Function to extract tag, index, and byte select from an address
-void extract_address_components(unsigned int address, int *tag, int *index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits);
+void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits);
 
 int main(int argc, char *argv[]) {
 
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
     fclose(file);  // Close the file
     return 0;
 
-int tag, index, byte_select;
+int tag, set_index, byte_select;
 
 /*Extraction Function Test*/
 
@@ -173,12 +173,12 @@ int tag, index, byte_select;
 unsigned int test_address = 0xFFFFFFFF;
 
 // Call the extraction function
-extract_address_components(test_address, &tag, &index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
+extract_address_components(test_address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
 
 #ifdef DEBUG
 fprintf(stderr, "Address: 0x%X\n", test_address);
 fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
-fprintf(stderr, "Extracted Index: 0x%X\n", index);
+fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
 fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
 #endif
 }
@@ -186,7 +186,7 @@ fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
 // Function declarations
 
 // Function to extract tag, index, and byte select from an address
-void extract_address_components(unsigned int address, int *tag, int *index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits) {
+void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits) {
     // Mask for the least significant 'Byte Select' bits
     unsigned int byte_select_mask = (1 << byte_select_bits) - 1;
 
@@ -197,8 +197,9 @@ void extract_address_components(unsigned int address, int *tag, int *index, int 
     *byte_select = address & byte_select_mask;
 
     // Extract index ("middle" bits)
-    *index = (address & index_mask) >> byte_select_bits;
+    *set_index = (address & index_mask) >> byte_select_bits;
 
     // Extract tag (remaining bits above index)
     *tag = address >> (byte_select_bits + index_bits);
 }
+
