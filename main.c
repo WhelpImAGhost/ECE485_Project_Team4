@@ -19,16 +19,19 @@
 #include <stdlib.h>
 #include "defines.c"
 
+// Global variables
 uint64_t counter = 0;
+
+
+// Function Prototypes
+
+
 
 int main(int argc, char *argv[]) {
 
     
     // Add flags for setting non-default variables
 
-
-
-    const int address_size = ADDRESS_SIZE;
 
     /* Memory Size Calculations */
 
@@ -42,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     const int BYTE_SELECT_BITS = log2(CACHE_LINE_SIZE);
     const int INDEX_BITS = log2(SETS);
-    const int TAG_BITS = address_size - (BYTE_SELECT_BITS + INDEX_BITS);
+    const int TAG_BITS = ADDRESS_SIZE - (BYTE_SELECT_BITS + INDEX_BITS);
     const int PLRU_ARRAY_SIZE = (ASSOCIATIVITY - 1);
     const int TOTAL_TAG_ARRAY = SETS * ((ASSOCIATIVITY * (TAG_BITS + TAG_ARRAY_MESI)) + PLRU_ARRAY_SIZE); 	
     //Can be used for testing to verify that values can be changed correctly
@@ -160,3 +163,6 @@ int main(int argc, char *argv[]) {
     fclose(file);  // Close the file
     return 0;
 }
+
+// Function declarations
+
