@@ -181,6 +181,7 @@ fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
 fprintf(stderr, "Extracted Index: 0x%X\n", index);
 fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
 #endif
+}
 
 // Function declarations
 
