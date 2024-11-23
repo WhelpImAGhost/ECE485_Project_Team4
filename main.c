@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 
     typedef struct {
         int plru[PLRU_ARRAY_SIZE]; // One per Set
-        Way *ways[ASSOCIATIVITY];                  // One per set
+        Way *ways[ASSOCIATIVITY];  // One per set
 
     } Set;
 
