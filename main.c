@@ -28,6 +28,7 @@ uint64_t counter = 0;
 
 // Function to extract tag, index, and byte select from an address
 void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits);
+int GetSnoopResult(unsigned int address);
 
 int main(int argc, char *argv[]) {
 
@@ -190,4 +191,9 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 
     // Extract tag (remaining bits above index)
     *tag = address >> (byte_select_bits + index_bits);
+
+}
+
+int GetSnoopResult(unsigned int address) {
+    return address & 0x3;
 }
