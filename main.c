@@ -18,12 +18,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "defines.c"
+#include <stdint.h>
 
 // Global variables
 uint64_t counter = 0;
 int mode = 1;       // 1 for normal, 0 for silent
 
 // Function Prototypes
+
+// Function to extract tag, index, and byte select from an address
+void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits);
 void UpdatePLRU(int PLRU[], int w );
 uint8_t VictimPLRU(int PLRU[]);
 int GetSnoopResult(unsigned int address);
@@ -66,7 +70,7 @@ int main(int argc, char *argv[]) {
 
     typedef struct {
         int plru[PLRU_ARRAY_SIZE]; // One per Set
-        Way *ways[ASSOCIATIVITY];                  // One per set
+        Way *ways[ASSOCIATIVITY];  // One per set
 
     } Set;
 
@@ -145,20 +149,45 @@ int main(int argc, char *argv[]) {
 
     int operation;
     unsigned int address;
+    int tag, set_index, byte_select;
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
+        extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
         #ifdef DEBUG
         fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
+        fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
+        fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
+        fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
         #endif
         // Process the values here if needed
     }
 
     fclose(file);  // Close the file
-    return 0;
+
+return 0;
 }
 
 // Function declarations
+
+
+// Function to extract tag, index, and byte select from an address
+void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits) {
+    // Mask for the least significant 'Byte Select' bits
+    unsigned int byte_select_mask = (1 << byte_select_bits) - 1;
+
+    // Mask for the next 'Index' Bits
+    unsigned int index_mask = ((1 << index_bits) - 1) << byte_select_bits;
+
+    // Extract byte select (least significant bits)
+    *byte_select = address & byte_select_mask;
+
+    // Extract index ("middle" bits)
+    *set_index = (address & index_mask) >> byte_select_bits;
+
+    // Extract tag (remaining bits above index)
+    *tag = address >> (byte_select_bits + index_bits);
+}
 
 
 // Function call to update PLRU bits after the most recent access
@@ -202,10 +231,12 @@ uint8_t VictimPLRU(int PLRU[]){
 
     b = b - (ASSOCIATIVITY - 1);
     return b;
+
 }
 
 int GetSnoopResult(unsigned int address) {
     return address & 0x3;
+
 }
 
 void MESI_set(int* mesi, unsigned int address, int operation){
@@ -255,3 +286,4 @@ void MESI_set(int* mesi, unsigned int address, int operation){
     return;
 
 }
+
