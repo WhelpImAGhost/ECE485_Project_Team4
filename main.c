@@ -21,6 +21,7 @@
 
 // Global variables
 uint64_t counter = 0;
+uint64_t counter2 = 0;
 int mode = 1;       // 1 for normal, 0 for silent
 
 // Global Type Definitions
@@ -39,7 +40,7 @@ typedef struct {
 // Function to extract tag, index, and byte select from an address
 void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits);
 void UpdatePLRU(int PLRU[], int w );
-uint8_t VictimPLRU(int PLRU[]);
+uint8_t VictimPLRU(int PLRU[], Way *way);
 int GetSnoopResult(unsigned int address);
 int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays);
 
@@ -148,7 +149,7 @@ int main(int argc, char *argv[]) {
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
-        int InvalidWays = 0;
+        int InvalidWays = -1;
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
         int hitmiss = hit_or_miss(index, set_index, tag, &InvalidWays);
         #ifdef DEBUG
@@ -165,6 +166,9 @@ int main(int argc, char *argv[]) {
         // Process the values here if needed
     }
 
+    int evict_way = VictimPLRU(index[set_index]->plru, *index[set_index]->ways);
+
+    fprintf(stderr, "counter 1: %llu\n counter 2: %llu \n", counter, counter2);
     fclose(file);  // Close the file
 
 return 0;
@@ -192,7 +196,9 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 
 // Function to check new address for hit or miss
 int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays){
+    counter++;
     for (int i = 0; i < ASSOCIATIVITY; i++){
+        counter2++;
         *InvalidWays = 0;
         Way *way = index[set_index]->ways[i];
         if (way->mesi != INVALID && way->tag == tag) {
@@ -232,7 +238,7 @@ void UpdatePLRU(int PLRU[], int w ){
 
 // Function call to determine which way to evict for a PLRU
 // Takes in specific PLRU for that set as an argument
-uint8_t VictimPLRU(int PLRU[]){
+uint8_t VictimPLRU(int PLRU[], Way *way){
 
     int b = 0;
 
@@ -244,6 +250,10 @@ uint8_t VictimPLRU(int PLRU[]){
         if(PLRU[b]) b = 2 * b + 1;
         else b = 2 * b + 2;
     }
+
+    way[b].mesi = INVALID;
+
+    
 
     b = b - (ASSOCIATIVITY - 1);
     return b;
