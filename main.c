@@ -239,7 +239,7 @@ int GetSnoopResult(unsigned int address) {
 
 }
 
-void MESI_set(int* mesi, unsigned int address, int operation){
+void MESI_set(int mesi, unsigned int address, int operation){
 
     int snoop = GetSnoopResult(address);
 
@@ -256,21 +256,21 @@ void MESI_set(int* mesi, unsigned int address, int operation){
 
             break;
         case WRITE_HD: // n = 1
-            if (mesi = INVALID) if (mode) fprintf(stderr, "ANNOUNCING READ FOR OWNERSHIP AT ADDRESS 0x%8X", address);
-            if (mesi = SHARED) if (mode) fprintf(stderr, "ANNOUNCING BUS UPGRADE AT ADDRESS 0x%8X", address);
+            if (mesi == INVALID) if (mode) fprintf(stderr, "ANNOUNCING READ FOR OWNERSHIP AT ADDRESS 0x%8X", address);
+            if (mesi == SHARED) if (mode) fprintf(stderr, "ANNOUNCING BUS UPGRADE AT ADDRESS 0x%8X", address);
             
             mesi = MODIFIED;
             break;
         case READ_S: // n = 3
 
-            if (mesi = EXCLUSIVE) mesi = SHARED;
-            if (mesi = MODIFIED) {
+            if (mesi == EXCLUSIVE) mesi = SHARED;
+            if (mesi == MODIFIED) {
                 if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM");
                 mesi = SHARED;
             }
         
         case RWIM_S: // n = 5
-            if (mesi = MODIFIED) if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM");
+            if (mesi == MODIFIED) if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM");
         case WRITE_S: // n = 4
         case INVALIDATE_S: // n = 6
         case CLEAR: // n = 8
