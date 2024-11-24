@@ -147,17 +147,13 @@ int main(int argc, char *argv[]) {
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
-
-
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
         if (operation == 0 | operation == 1 | operation == 2) {
-        int CacheResult = hit_or_miss(index, set_index, tag);
         #ifdef DEBUG
         fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
         fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
         fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
         fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
-
         int CacheResult = hit_or_miss(index, set_index, tag);
         if (CacheResult) {
         printf("Hit!\n");
@@ -168,8 +164,6 @@ int main(int argc, char *argv[]) {
         } else {}
         // Process the values here if needed
     }
-
-    int evict_way = VictimPLRU(index[set_index]->plru, *index[set_index]->ways);
     fclose(file);  // Close the file
 
 return 0;
@@ -201,8 +195,8 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     for (int i = 0; i < ASSOCIATIVITY; i++){
         Way *way = index[set_index]->ways[i];
         #ifdef DEBUG
-        fprintf(stderr, "Current tag: 0x%2X, New tag: 0x%2X\n" , way->tag, tag );
-        fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
+        //fprintf(stderr, "Current tag: 0x%2X, New tag: 0x%2X\n" , way->tag, tag );
+        //fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
         #endif
         if (way->mesi != INVALID && way->tag == tag) {
             UpdatePLRU(index[set_index]->plru, i);
@@ -217,14 +211,14 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     if(InvalidWays >= 0) {
         Way *invalid_way =index[set_index]->ways[InvalidWays];
         invalid_way->tag = tag;
-        MESI_set(index[set_index]->ways[InvalidWays]->mesi, address, operation); //Update MESI State based off snoop results
+        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), address, operation); //Update MESI State based off snoop results
         UpdatePLRU(index[set_index]->plru, InvalidWays); //Update PLRU for the newly entered way
 // Miss with a full set
     } else {
         int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways);
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag;
-        MESI_set(victim_eviction->mesi, address, operation);
+        MESI_set(&(victim_eviction->mesi), address, operation);
         UpdatePLRU(index[set_index]->plru, victim_line);
     }
 
