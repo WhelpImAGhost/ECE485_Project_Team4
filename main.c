@@ -43,7 +43,7 @@ void UpdatePLRU(int PLRU[], int w );
 uint8_t VictimPLRU(int PLRU[], Way *way);
 int GetSnoopResult(unsigned int address);
 int hit_or_miss(Set *index[], int set_index, int tag);
-void MESI_set(int mesi, unsigned int address, int operation);
+void MESI_set(int* mesi, unsigned int address, int operation);
 
 int main(int argc, char *argv[]) {
 
@@ -147,6 +147,8 @@ int main(int argc, char *argv[]) {
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
+
+
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
         if (operation == 0 | operation == 1 | operation == 2) {
         int CacheResult = hit_or_miss(index, set_index, tag);
@@ -155,6 +157,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
         fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
         fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
+
+        int CacheResult = hit_or_miss(index, set_index, tag);
         if (CacheResult) {
         printf("Hit!\n");
         } else {
@@ -196,6 +200,10 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     int InvalidWays = -1;
     for (int i = 0; i < ASSOCIATIVITY; i++){
         Way *way = index[set_index]->ways[i];
+        #ifdef DEBUG
+        fprintf(stderr, "Current tag: 0x%2X, New tag: 0x%2X\n" , way->tag, tag );
+        fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
+        #endif
         if (way->mesi != INVALID && way->tag == tag) {
             UpdatePLRU(index[set_index]->plru, i);
             return 1; //Hit
@@ -278,7 +286,7 @@ int GetSnoopResult(unsigned int address) {
 
 }
 
-void MESI_set(int mesi, unsigned int address, int operation){
+void MESI_set(int* mesi, unsigned int address, int operation){
 
     int snoop = GetSnoopResult(address);
 
@@ -288,34 +296,42 @@ void MESI_set(int mesi, unsigned int address, int operation){
         
         case READ_HD: // n = 0
         case READ_HI: // n = 2
+            #ifdef DEBUG
+            fprintf(stderr, "Case 0 or 2\n");
+            #endif
+
             if (snoop == HIT || snoop == HITM){
-                mesi = SHARED;
+                *mesi = SHARED;
             }
-            else mesi = EXCLUSIVE;
+            else *mesi = EXCLUSIVE;
+
+            #ifdef DEBUG
+            fprintf(stderr, "New MESI: %d\n", *mesi);
+            #endif
 
             break;
         case WRITE_HD: // n = 1
-            if (mesi == INVALID) if (mode) fprintf(stderr, "ANNOUNCING READ FOR OWNERSHIP AT ADDRESS 0x%8X\n", address);
-            if (mesi == SHARED) if (mode) fprintf(stderr, "ANNOUNCING BUS UPGRADE AT ADDRESS 0x%8X\n", address);
+            if (*mesi == INVALID) if (mode) fprintf(stderr, "ANNOUNCING READ FOR OWNERSHIP AT ADDRESS 0x%8X\n", address);
+            if (*mesi == SHARED) if (mode) fprintf(stderr, "ANNOUNCING BUS UPGRADE AT ADDRESS 0x%8X\n", address);
             
-            mesi = MODIFIED;
+            *mesi = MODIFIED;
             break;
         case READ_S: // n = 3
 
-            if (mesi == EXCLUSIVE) mesi = SHARED;
-            if (mesi == MODIFIED) {
+            if (*mesi == EXCLUSIVE) *mesi = SHARED;
+            if (*mesi == MODIFIED) {
                 if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM\n");
-                mesi = SHARED;
+                *mesi = SHARED;
             }
         
         case RWIM_S: // n = 5
-            if (mesi == MODIFIED) if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM\n");
+            if (*mesi == MODIFIED) if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM\n");
         case WRITE_S: // n = 4
         case INVALIDATE_S: // n = 6
         case CLEAR: // n = 8
 
 
-            mesi = INVALID;
+            *mesi = INVALID;
             break;
         default:
             fprintf(stderr,"Invalid operation input");
