@@ -203,11 +203,27 @@ int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays){
 void Miss_Invalid(Set *index[], int set_index, int tag, int *InvalidWays) {
     if (InvalidWays != NULL) {
         index[set_index]->ways[*InvalidWays]->tag = tag;
-        //index[set_index]->ways[*InvalidWays]->mesi = MESI_FUNC(); // Update MESI state
+        //index[set_index]->ways[*InvalidWays]->mesi = MESI_set(); // Update MESI state
         fprintf(stderr, "You got a cache miss but invalid way %d\n", *InvalidWays);
     } else {
         fprintf(stderr, "No invalid ways available for replacement!\n");
     }
+}
+
+
+// For miss with PLRU replacement
+void Miss_PLRU(Set *index[], int set_index, int tag) {
+
+    int evict_way = VictimPLRU(index[set_index]->plru, index[set_index]->ways);
+
+// change victim PLRU to have it evict the way rather than implment this
+// call update PLRU array you want to update after access
+// use as argument     index[set_index]->plru; and index[set_index]->way
+
+    // Replace the selected way
+    index[set_index]->ways[evict_way]->tag = tag;
+    //index[set_index]->ways[evict_way]->mesi = MESI_set(); // Update MESI state
+    fprintf(stderr, "Cache miss. Replacing way %d using PLRU.\n", evict_way);
 }
 
 
