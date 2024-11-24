@@ -54,27 +54,28 @@ int main(int argc, char *argv[]) {
     // Add flags for setting non-default variables
     //----------------------------ADD VERY IMPORTANT------------------------------------------------------------------
 
-    /* Memory Size Calculations */
+    /* MEMORY SIZE CALCULATIONS */
     const int TRUE_CAPACITY = pow(2,CACHE_SIZE);
     const int LINES = (TRUE_CAPACITY / CACHE_LINE_SIZE);
     const int SETS = (LINES / ASSOCIATIVITY);
 
 
-    /* Tag Array Calculations */
+    /* TAG ARRAY CALCULATIONS 
+    Can be used for testing to verify that values can be changed correctly for modularity*/
     const int BYTE_SELECT_BITS = log2(CACHE_LINE_SIZE);
     const int INDEX_BITS = log2(SETS);
     const int TAG_BITS = ADDRESS_SIZE - (BYTE_SELECT_BITS + INDEX_BITS);
     const int PLRU_ARRAY_SIZE = (ASSOCIATIVITY - 1);
     const int TOTAL_TAG_ARRAY = SETS * ((ASSOCIATIVITY * (TAG_BITS + TAG_ARRAY_MESI)) + PLRU_ARRAY_SIZE); 	
-    //Can be used for testing to verify that values can be changed correctly
 
-    // Include tests for if the tag is too big or index is too big
-    // (go to default if the input values are out of bounds). 
+    /* Include tests for if the tag is too big or index is too big
+    (go to default if the input values are out of bounds). */
 
-    int plru_array[PLRU_ARRAY_SIZE];
+    int plru_array[PLRU_ARRAY_SIZE]; //Initialize PLRU Array
 
-    Set *index[SETS]; // Array of Set pointers
+    Set *index[SETS]; // Array of Set Pointers
 
+    /*################## Initializing Data Structures #################*/
     for (int i = 0; i < SETS; i++) {
     index[i] = (Set *)malloc(sizeof(Set));
     if (index[i] == NULL) {
@@ -108,7 +109,7 @@ int main(int argc, char *argv[]) {
         index[i]->ways[k]->tag = 0;
     }
 }
-
+    // Print # of Sets for Debugging
     #ifdef DEBUG
     fprintf(stderr, "Number of sets: %d\n", SETS);
     #endif
@@ -139,12 +140,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Display active file name
     fprintf(stderr, "Using file: %s\n", filename);
 
     int tag, set_index, byte_select;
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
+        // Breakdown address into proper components
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
         if (operation == READ_HD | operation == READ_HI | operation == WRITE_HD) {
         int CacheResult = hit_or_miss(index, set_index, tag);
@@ -280,6 +283,7 @@ int GetSnoopResult(unsigned int address) {
 
 }
 
+// Determine MESI state updates based upon Snoop Results
 void MESI_set(int* mesi, unsigned int address, int operation){
 
     int snoop = GetSnoopResult(address);
