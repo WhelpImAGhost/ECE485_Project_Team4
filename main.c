@@ -31,6 +31,7 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 void UpdatePLRU(int PLRU[], int w );
 uint8_t VictimPLRU(int PLRU[]);
 int GetSnoopResult(unsigned int address);
+int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays);
 
 int main(int argc, char *argv[]) {
 
@@ -74,8 +75,6 @@ int main(int argc, char *argv[]) {
 
     } Set;
 
-
-    
     Set *index[SETS];
 
 
@@ -170,7 +169,6 @@ return 0;
 
 // Function declarations
 
-
 // Function to extract tag, index, and byte select from an address
 void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits) {
     // Mask for the least significant 'Byte Select' bits
@@ -187,6 +185,21 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 
     // Extract tag (remaining bits above index)
     *tag = address >> (byte_select_bits + index_bits);
+}
+
+// Function to check new address for hit or miss
+int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays){
+    InvalidWays = NULL;
+    for (int i = 0; i < ASSOCIATIVITY; i++){
+        Way *way = index[set_index]->ways[i];
+        if (way->mesi != INVALID && way->tag == tag) {
+            return 1; //Hit
+        }
+        else if (way->mesi == INVALID) {
+            InvalidWays = i;
+        }
+    }
+    return 0; //Miss
 }
 
 
