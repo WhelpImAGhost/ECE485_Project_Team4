@@ -8,9 +8,10 @@
 #define MODIFIED 0b11	/* This cache has a modified version of the data */
 
 /* Snoop Result Types*/
-#define NOHIT 0b00		/* No hit */
-#define HIT 0b01		/* Hit */
-#define HITM 0b10		/* Hit to modified liner */
+#define NOHIT1 0b10		/* No hit */
+#define NOHIT2 0b11     /* No hit */
+#define HIT 0b00		/* Hit */
+#define HITM 0b01		/* Hit to modified liner */
 
 /* Bus Operation Types */
 #define READ 0b00		/* Bus Read */
@@ -32,8 +33,8 @@
 #define WRITE_S 0b0100		/* Snoop write request */
 #define RWIM_S 0b0101		/* Snoop read with intent to modify request */
 #define INVALIDATE_S 0b0110	/* Snoop invalidate command */
-#define CLEAR 0b0111		/* Clear the cache and reset all states */
-#define PRINT 0b1000		/* Print content and state of each valid cache line */
+#define CLEAR 0b1000		/* Clear the cache and reset all states */
+#define PRINT 0b1001		/* Print content and state of each valid cache line */
 
 /* Memory Size Defaults */
 #define CACHE_SIZE 26		/* 2^(CACHE_SIZE) = True Capacity in Bytes */
