@@ -148,20 +148,25 @@ int main(int argc, char *argv[]) {
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
-        if (operation == 0 | operation == 1 | operation == 2) {
+        if (operation == READ_HD | operation == READ_HI | operation == WRITE_HD) {
+        int CacheResult = hit_or_miss(index, set_index, tag);
         #ifdef DEBUG
         fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
         fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
         fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
         fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
         int CacheResult = hit_or_miss(index, set_index, tag);
+        #endif
+        printf("Extracted Tag: 0x%X\n", tag);
+        printf("Extracted Index: 0x%X\n", set_index);
         if (CacheResult) {
         printf("Hit!\n");
         } else {
         printf("Miss!\n");
         }
-        #endif
+        
         } else {}
+
         // Process the values here if needed
     }
     fclose(file);  // Close the file
