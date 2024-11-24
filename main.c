@@ -213,21 +213,20 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         }
     }
 
-// Miss with invalid ways in the current set
+    // Miss with invalid ways in the current set
     if(InvalidWays >= 0) {
-        Way *invalid_way =index[set_index]->ways[InvalidWays];
-        invalid_way->tag = tag;
-        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), address, operation); //Update MESI State based off snoop results
-        UpdatePLRU(index[set_index]->plru, InvalidWays); //Update PLRU for the newly entered way
-// Miss with a full set
+        Way *invalid_way =index[set_index]->ways[InvalidWays]; // Navigate to way in active set with an INVALID MESI state
+        invalid_way->tag = tag; // Place new tag at current way
+        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), address, operation); // Update MESI State based off snoop results
+        UpdatePLRU(index[set_index]->plru, InvalidWays); // Update PLRU for the newly entered way
+    // Miss with a full set
     } else {
-        int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways);
+        int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways); // Decide which way is a the LRU
         Way *victim_eviction = index[set_index]->ways[victim_line];
-        victim_eviction ->tag = tag;
-        MESI_set(&(victim_eviction->mesi), address, operation);
-        UpdatePLRU(index[set_index]->plru, victim_line);
+        victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
+        MESI_set(&(victim_eviction->mesi), address, operation); // Update MESI State based off snoop results
+        UpdatePLRU(index[set_index]->plru, victim_line); // Update PLRU for the newly entered way
     }
-
     return 0; //Miss
 }
 
