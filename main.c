@@ -20,9 +20,9 @@
 #include <stdint.h>
 
 // Global variables
-uint64_t counter = 0;
-uint64_t counter2 = 0;
 int mode = 1;       // 1 for normal, 0 for silent
+uint32_t address;
+int operation;
 
 // Global Type Definitions
 typedef struct {
@@ -42,7 +42,8 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 void UpdatePLRU(int PLRU[], int w );
 uint8_t VictimPLRU(int PLRU[], Way *way);
 int GetSnoopResult(unsigned int address);
-int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays);
+int hit_or_miss(Set *index[], int set_index, int tag);
+void MESI_set(int mesi, unsigned int address, int operation);
 
 int main(int argc, char *argv[]) {
 
@@ -110,7 +111,6 @@ int main(int argc, char *argv[]) {
 
     #ifdef DEBUG
     fprintf(stderr, "Number of sets: %d\n", SETS);
-    fprintf(stderr, "Total number of initialized Ways: %llu\n", counter);
     #endif
 
 
@@ -143,32 +143,27 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "Using file: %s\n", filename);
 
-    int operation;
-    unsigned int address;
     int tag, set_index, byte_select;
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
-        int InvalidWays = -1;
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
-        int hitmiss = hit_or_miss(index, set_index, tag, &InvalidWays);
+        int CacheResult = hit_or_miss(index, set_index, tag);
         #ifdef DEBUG
         fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
         fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
         fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
         fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
-        if (hitmiss) {
+        if (CacheResult) {
         printf("Hit!\n");
         } else {
-        printf("Miss!\nInvalid way: %d\n", InvalidWays);
+        printf("Miss!\n");
         }
         #endif
         // Process the values here if needed
     }
 
     int evict_way = VictimPLRU(index[set_index]->plru, *index[set_index]->ways);
-
-    fprintf(stderr, "counter 1: %llu\n counter 2: %llu \n", counter, counter2);
     fclose(file);  // Close the file
 
 return 0;
@@ -195,48 +190,31 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 }
 
 // Function to check new address for hit or miss
-int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays){
-    counter++;
+int hit_or_miss(Set *index[], int set_index, int tag){
+    int InvalidWays = -1;
     for (int i = 0; i < ASSOCIATIVITY; i++){
-        counter2++;
-        *InvalidWays = 0;
         Way *way = index[set_index]->ways[i];
         if (way->mesi != INVALID && way->tag == tag) {
+            UpdatePLRU(index[set_index]->plru, i);
             return 1; //Hit
         }
         else if (way->mesi == INVALID){
-            *InvalidWays = i;
+            InvalidWays = i;
         }
     }
+
+// Miss with invalid ways in the current set
+    if(InvalidWays >= 0) {
+        Way *invalid_way =index[set_index]->ways[InvalidWays];
+        invalid_way->tag = tag;
+        MESI_set(index[0]->ways[InvalidWays]->mesi, address, operation);
+        UpdatePLRU(index[set_index]->plru, InvalidWays);
+    }
+
     return 0; //Miss
 }
 
-// For miss and invalid ways
-void Miss_Invalid(Set *index[], int set_index, int tag, int *InvalidWays) {
-    if (InvalidWays != NULL) {
-        index[set_index]->ways[*InvalidWays]->tag = tag;
-        //index[set_index]->ways[*InvalidWays]->mesi = MESI_set(); // Update MESI state
-        fprintf(stderr, "You got a cache miss but invalid way %d\n", *InvalidWays);
-    } else {
-        fprintf(stderr, "No invalid ways available for replacement!\n");
-    }
-}
 
-
-// For miss with PLRU replacement
-void Miss_PLRU(Set *index[], int set_index, int tag) {
-
-    int evict_way = VictimPLRU(index[set_index]->plru, index[set_index]->ways);
-
-// change victim PLRU to have it evict the way rather than implment this
-// call update PLRU array you want to update after access
-// use as argument     index[set_index]->plru; and index[set_index]->way
-
-    // Replace the selected way
-    index[set_index]->ways[evict_way]->tag = tag;
-    //index[set_index]->ways[evict_way]->mesi = MESI_set(); // Update MESI state
-    fprintf(stderr, "Cache miss. Replacing way %d using PLRU.\n", evict_way);
-}
 
 // Function call to update PLRU bits after the most recent access
 // Takes in specific PLRU for that set as an argument
@@ -308,8 +286,8 @@ void MESI_set(int mesi, unsigned int address, int operation){
 
             break;
         case WRITE_HD: // n = 1
-            if (mesi == INVALID) if (mode) fprintf(stderr, "ANNOUNCING READ FOR OWNERSHIP AT ADDRESS 0x%8X", address);
-            if (mesi == SHARED) if (mode) fprintf(stderr, "ANNOUNCING BUS UPGRADE AT ADDRESS 0x%8X", address);
+            if (mesi == INVALID) if (mode) fprintf(stderr, "ANNOUNCING READ FOR OWNERSHIP AT ADDRESS 0x%8X\n", address);
+            if (mesi == SHARED) if (mode) fprintf(stderr, "ANNOUNCING BUS UPGRADE AT ADDRESS 0x%8X\n", address);
             
             mesi = MODIFIED;
             break;
@@ -317,12 +295,12 @@ void MESI_set(int mesi, unsigned int address, int operation){
 
             if (mesi == EXCLUSIVE) mesi = SHARED;
             if (mesi == MODIFIED) {
-                if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM");
+                if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM\n");
                 mesi = SHARED;
             }
         
         case RWIM_S: // n = 5
-            if (mesi == MODIFIED) if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM");
+            if (mesi == MODIFIED) if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM\n");
         case WRITE_S: // n = 4
         case INVALIDATE_S: // n = 6
         case CLEAR: // n = 8
