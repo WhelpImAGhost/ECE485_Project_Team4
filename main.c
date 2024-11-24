@@ -235,21 +235,22 @@ int hit_or_miss(Set *index[], int set_index, int tag){
 Takes in specific PLRU for that set as an argument */
 void UpdatePLRU(int PLRU[], int w ){
     int bit = 0;
+    // Check for any possible errors
     if (w > (ASSOCIATIVITY-1) || w < 0){
         fprintf(stderr,"Value of w not allowed for PLRU updating\n");
         exit(-1);
     }
-
-
+    // Determine the most updated way by moving through the array
     for (int i = 0; i < log2(ASSOCIATIVITY); i++){
+        // If first line is 0 >> Left, if it is 1 >> Right
         if ( (0x1 & (w >> ( (int)(log2((int)ASSOCIATIVITY) -1)-i ) )) == 0 )  {
             PLRU[bit] = 0;
-            bit = (2*bit) + 1;
+            bit = (2*bit) + 1; // Left Child
         }
 
         else {
             PLRU[bit] = 1;
-            bit = (2*bit) + 2;
+            bit = (2*bit) + 2; //Right Child
         }
     }
     return;
@@ -260,7 +261,7 @@ Takes in specific PLRU for that set as an argument */
 uint8_t VictimPLRU(int PLRU[], Way *way){
 
     int b = 0;
-
+    // Traverse the PLRU array for replacement the opposite way of accesses
     for (int i = 0; i < log2(ASSOCIATIVITY); i++){
         #ifdef DEBUG
             fprintf(stderr,"Triggering PLRU check #%d with val %d, ", i, PLRU[b]);
@@ -269,11 +270,7 @@ uint8_t VictimPLRU(int PLRU[], Way *way){
         if(PLRU[b]) b = 2 * b + 1;
         else b = 2 * b + 2;
     }
-
     way[b].mesi = INVALID;
-
-    
-
     b = b - (ASSOCIATIVITY - 1);
     return b;
 
