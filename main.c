@@ -147,10 +147,19 @@ int main(int argc, char *argv[]) {
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
-        // Breakdown address into proper components
+        // Breakdown address into proper components for storage in the cache
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
+        // Determine if Hit or Miss on CPU command
         if (operation == READ_HD | operation == READ_HI | operation == WRITE_HD) {
+        // Call "hit_or_miss" to determine result
         int CacheResult = hit_or_miss(index, set_index, tag);
+        // Print CacheResult
+        if (CacheResult) {
+        printf("Hit!\n");
+        } else {
+        printf("Miss!\n");
+        }} else {
+        // If Debug is Active, Display Operation and Address Components
         #ifdef DEBUG
         fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
         fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
@@ -158,17 +167,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
         int CacheResult = hit_or_miss(index, set_index, tag);
         #endif
-        printf("Extracted Tag: 0x%X\n", tag);
-        printf("Extracted Index: 0x%X\n", set_index);
-        if (CacheResult) {
-        printf("Hit!\n");
-        } else {
-        printf("Miss!\n");
         }
-        
-        } else {}
-
-        // Process the values here if needed
     }
     fclose(file);  // Close the file
 
@@ -193,17 +192,22 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 
 // Determine if newest input address is a Hit or Miss, and act accordingly
 int hit_or_miss(Set *index[], int set_index, int tag){
+    // Refresh InvalidWays for each function run
     int InvalidWays = -1;
+    // Read through each way in the active set to determine if hit
     for (int i = 0; i < ASSOCIATIVITY; i++){
         Way *way = index[set_index]->ways[i];
         #ifdef DEBUG
-        //fprintf(stderr, "Current tag: 0x%2X, New tag: 0x%2X\n" , way->tag, tag );
-        //fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
+        fprintf(stderr, "Current tag: 0x%2X, New tag: 0x%2X\n" , way->tag, tag );
+        fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
         #endif
+        // Hit if MESI bits are not "INVALID" and address tag == cached tag
         if (way->mesi != INVALID && way->tag == tag) {
+            // Update PLRU to reflect MRU (Hit)
             UpdatePLRU(index[set_index]->plru, i);
             return 1; //Hit
         }
+        //If not a hit, and there is an invalid way, mark the invalid way to be "filled" upon miss
         else if (way->mesi == INVALID){
             InvalidWays = i;
         }
