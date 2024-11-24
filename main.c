@@ -22,12 +22,14 @@
 
 // Global variables
 uint64_t counter = 0;
-
+int mode = 1;       // 1 for normal, 0 for silent
 
 // Function Prototypes
 
 // Function to extract tag, index, and byte select from an address
 void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits);
+void UpdatePLRU(int PLRU[], int w );
+uint8_t VictimPLRU(int PLRU[]);
 int GetSnoopResult(unsigned int address);
 
 int main(int argc, char *argv[]) {
@@ -56,6 +58,7 @@ int main(int argc, char *argv[]) {
     // Include tests for if the tag is too big or index is too big
     // (go to default if the input values are out of bounds). 
 
+    int plru_array[PLRU_ARRAY_SIZE];
 
     // Set up cache arrays
     
@@ -74,9 +77,9 @@ int main(int argc, char *argv[]) {
 
     
     Set *index[SETS];
+
+
     // Allocate memory for index and its components
-
-
     for (int i = 0; i < SETS; i++) {
 
 
@@ -114,15 +117,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Total number of initialized Ways: %llu\n", counter);
     #endif
 
-    for (int i = 0; i < ASSOCIATIVITY; i++){
-        index[0]->ways[i]->tag = 15 - i;
-        // index[0]->ways[i]->tag
-        // index[0]->ways[i]->tag
-    }
 
-    for (int i = 0; i < ASSOCIATIVITY; i++){
-        fprintf(stderr, "Tag val of way %d in set 0: %d\n", i, index[0]->ways[i]->tag);
-    }
 
     // Set default filename
     const char *default_filename = "Default.din";
@@ -175,6 +170,7 @@ return 0;
 
 // Function declarations
 
+
 // Function to extract tag, index, and byte select from an address
 void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits) {
     // Mask for the least significant 'Byte Select' bits
@@ -191,9 +187,103 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 
     // Extract tag (remaining bits above index)
     *tag = address >> (byte_select_bits + index_bits);
+}
+
+
+// Function call to update PLRU bits after the most recent access
+// Takes in specific PLRU for that set as an argument
+void UpdatePLRU(int PLRU[], int w ){
+    int bit = 0;
+    if (w > (ASSOCIATIVITY-1) || w < 0){
+        fprintf(stderr,"Value of w not allowed for PLRU updating\n");
+        exit(-1);
+    }
+
+
+    for (int i = 0; i < log2(ASSOCIATIVITY); i++){
+        if ( (0x1 & (w >> ( (int)(log2((int)ASSOCIATIVITY) -1)-i ) )) == 0 )  {
+            PLRU[bit] = 0;
+            bit = (2*bit) + 1;
+        }
+
+        else {
+            PLRU[bit] = 1;
+            bit = (2*bit) + 2;
+        }
+    }
+    return;
+}
+
+// Function call to determine which way to evict for a PLRU
+// Takes in specific PLRU for that set as an argument
+uint8_t VictimPLRU(int PLRU[]){
+
+    int b = 0;
+
+    for (int i = 0; i < log2(ASSOCIATIVITY); i++){
+        #ifdef DEBUG
+            fprintf(stderr,"Triggering PLRU check #%d with val %d, ", i, PLRU[b]);
+            fprintf(stderr, "B = %d, \n", b);
+        #endif
+        if(PLRU[b]) b = 2 * b + 1;
+        else b = 2 * b + 2;
+    }
+
+    b = b - (ASSOCIATIVITY - 1);
+    return b;
 
 }
 
 int GetSnoopResult(unsigned int address) {
     return address & 0x3;
+
 }
+
+void MESI_set(int* mesi, unsigned int address, int operation){
+
+    int snoop = GetSnoopResult(address);
+
+
+    switch (operation){
+
+        
+        case READ_HD: // n = 0
+        case READ_HI: // n = 2
+            if (snoop == HIT || snoop == HITM){
+                mesi = SHARED;
+            }
+            else mesi = EXCLUSIVE;
+
+            break;
+        case WRITE_HD: // n = 1
+            if (mesi = INVALID) if (mode) fprintf(stderr, "ANNOUNCING READ FOR OWNERSHIP AT ADDRESS 0x%8X", address);
+            if (mesi = SHARED) if (mode) fprintf(stderr, "ANNOUNCING BUS UPGRADE AT ADDRESS 0x%8X", address);
+            
+            mesi = MODIFIED;
+            break;
+        case READ_S: // n = 3
+
+            if (mesi = EXCLUSIVE) mesi = SHARED;
+            if (mesi = MODIFIED) {
+                if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM");
+                mesi = SHARED;
+            }
+        
+        case RWIM_S: // n = 5
+            if (mesi = MODIFIED) if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM");
+        case WRITE_S: // n = 4
+        case INVALIDATE_S: // n = 6
+        case CLEAR: // n = 8
+
+
+            mesi = INVALID;
+            break;
+        default:
+            fprintf(stderr,"Invalid operation input");
+            exit(-1);
+    }
+
+    return;
+
+}
+
