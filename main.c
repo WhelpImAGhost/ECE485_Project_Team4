@@ -148,12 +148,19 @@ int main(int argc, char *argv[]) {
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
+        int InvalidWays = 0;
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
+        int hitmiss = hit_or_miss(index, set_index, tag, &InvalidWays);
         #ifdef DEBUG
         fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
         fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
         fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
         fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
+        if (hitmiss) {
+        printf("Hit!\n");
+        } else {
+        printf("Miss!\nInvalid way: %d\n", InvalidWays);
+        }
         #endif
         // Process the values here if needed
     }
@@ -185,13 +192,13 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 
 // Function to check new address for hit or miss
 int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays){
-    InvalidWays = NULL;
     for (int i = 0; i < ASSOCIATIVITY; i++){
+        *InvalidWays = 0;
         Way *way = index[set_index]->ways[i];
         if (way->mesi != INVALID && way->tag == tag) {
             return 1; //Hit
         }
-        else if (way->mesi == INVALID) {
+        else if (way->mesi == INVALID){
             *InvalidWays = i;
         }
     }
