@@ -1,30 +1,29 @@
-/*
- * ECE 485/585 Final Prroject
- * Team 4
- * 
- * Ameer Melli
- * Caleb Monti
- * Chris Kane-Pardy
- * 
+/*####################################################################
+* ECE 485/585 Final Prroject
+* Team 4
+* 
+* Ameer Melli
+* Caleb Monti
+* Chris Kane-Pardy
+* 
 * This is the test branch
 * gcc main.c -o test -DDEBUG (to run debug mode with prints)
-* gcc main.c -o test (run without prints)
+* gcc main.c -o test (run without Debug Mode Active)
 * ./test (run code)
 * ./test rwims.din (to run with a file name)
-*/
-
+######################################################################*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "defines.c"
 #include <stdint.h>
 
-// Global variables
+/*####################### Global variables ###########################*/
 int mode = 1;       // 1 for normal, 0 for silent
 uint32_t address;
 int operation;
 
-// Global Type Definitions
+/*#################### Global Type Definitions #######################*/
 typedef struct {
     int mesi; // MESI state
     int tag;  // Tag
@@ -35,32 +34,33 @@ typedef struct {
     Way **ways;      // Pointer to array of Way pointers (dynamic array)
 } Set;
 
-// Function Prototypes
+/*##################### Function Prototypes ##########################*/
 
 // Function to extract tag, index, and byte select from an address
 void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits);
+// Update PLRU in active set to reflect MRU way
 void UpdatePLRU(int PLRU[], int w );
+// Find LRU way in active set for eviction
 uint8_t VictimPLRU(int PLRU[], Way *way);
+// Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
 int GetSnoopResult(unsigned int address);
+// Determine if newest input address is a Hit or Miss, and act accordingly
 int hit_or_miss(Set *index[], int set_index, int tag);
+// Determine MESI state updates based upon Snoop Results
 void MESI_set(int* mesi, unsigned int address, int operation);
 
 int main(int argc, char *argv[]) {
 
-    
     // Add flags for setting non-default variables
-
+    //----------------------------ADD VERY IMPORTANT------------------------------------------------------------------
 
     /* Memory Size Calculations */
-
     const int TRUE_CAPACITY = pow(2,CACHE_SIZE);
     const int LINES = (TRUE_CAPACITY / CACHE_LINE_SIZE);
     const int SETS = (LINES / ASSOCIATIVITY);
 
 
     /* Tag Array Calculations */
-
-
     const int BYTE_SELECT_BITS = log2(CACHE_LINE_SIZE);
     const int INDEX_BITS = log2(SETS);
     const int TAG_BITS = ADDRESS_SIZE - (BYTE_SELECT_BITS + INDEX_BITS);
@@ -112,8 +112,6 @@ int main(int argc, char *argv[]) {
     #ifdef DEBUG
     fprintf(stderr, "Number of sets: %d\n", SETS);
     #endif
-
-
 
     // Set default filename
     const char *default_filename = "Default.din";
@@ -174,27 +172,23 @@ int main(int argc, char *argv[]) {
 return 0;
 }
 
-// Function declarations
+/*#################### Function declarations ####################*/
 
 // Function to extract tag, index, and byte select from an address
 void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits) {
     // Mask for the least significant 'Byte Select' bits
     unsigned int byte_select_mask = (1 << byte_select_bits) - 1;
-
     // Mask for the next 'Index' Bits
     unsigned int index_mask = ((1 << index_bits) - 1) << byte_select_bits;
-
     // Extract byte select (least significant bits)
     *byte_select = address & byte_select_mask;
-
     // Extract index ("middle" bits)
     *set_index = (address & index_mask) >> byte_select_bits;
-
     // Extract tag (remaining bits above index)
     *tag = address >> (byte_select_bits + index_bits);
 }
 
-// Function to check new address for hit or miss
+// Determine if newest input address is a Hit or Miss, and act accordingly
 int hit_or_miss(Set *index[], int set_index, int tag){
     int InvalidWays = -1;
     for (int i = 0; i < ASSOCIATIVITY; i++){
@@ -231,9 +225,8 @@ int hit_or_miss(Set *index[], int set_index, int tag){
 }
 
 
-
-// Function call to update PLRU bits after the most recent access
-// Takes in specific PLRU for that set as an argument
+/* Update PLRU in active set to reflect MRU way 
+Takes in specific PLRU for that set as an argument */
 void UpdatePLRU(int PLRU[], int w ){
     int bit = 0;
     if (w > (ASSOCIATIVITY-1) || w < 0){
@@ -256,8 +249,8 @@ void UpdatePLRU(int PLRU[], int w ){
     return;
 }
 
-// Function call to determine which way to evict for a PLRU
-// Takes in specific PLRU for that set as an argument
+/* Find LRU way in active set for eviction
+Takes in specific PLRU for that set as an argument */
 uint8_t VictimPLRU(int PLRU[], Way *way){
 
     int b = 0;
@@ -280,7 +273,9 @@ uint8_t VictimPLRU(int PLRU[], Way *way){
 
 }
 
+// Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
 int GetSnoopResult(unsigned int address) {
+// Mask 2LSB'f of address & return for use in MESI funtion
     return address & 0x3;
 
 }
@@ -310,8 +305,8 @@ void MESI_set(int* mesi, unsigned int address, int operation){
 
             break;
         case WRITE_HD: // n = 1
-            if (*mesi == INVALID) if (mode) fprintf(stderr, "ANNOUNCING READ FOR OWNERSHIP AT ADDRESS 0x%8X\n", address);
-            if (*mesi == SHARED) if (mode) fprintf(stderr, "ANNOUNCING BUS UPGRADE AT ADDRESS 0x%8X\n", address);
+            if (*mesi == INVALID) if (mode) fprintf(stderr, "BusRdX @ 0x%8X\n", address);
+            if (*mesi == SHARED) if (mode) fprintf(stderr, "BusUpgr @ 0x%8X\n", address);
             
             *mesi = MODIFIED;
             break;
@@ -319,12 +314,12 @@ void MESI_set(int* mesi, unsigned int address, int operation){
 
             if (*mesi == EXCLUSIVE) *mesi = SHARED;
             if (*mesi == MODIFIED) {
-                if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM\n");
+                if (mode) fprintf(stderr, "0x%8X Flush to DRAM\n", address);
                 *mesi = SHARED;
             }
         
         case RWIM_S: // n = 5
-            if (*mesi == MODIFIED) if (mode) fprintf(stderr, "FLUSHING CONTENTS TO DRAM\n");
+            if (*mesi == MODIFIED) if (mode) fprintf(stderr, "0x%8X Flush to DRAM\n", address);
         case WRITE_S: // n = 4
         case INVALIDATE_S: // n = 6
         case CLEAR: // n = 8
@@ -333,7 +328,7 @@ void MESI_set(int* mesi, unsigned int address, int operation){
             *mesi = INVALID;
             break;
         default:
-            fprintf(stderr,"Invalid operation input");
+            fprintf(stderr,"Invalid Operation");
             exit(-1);
     }
 
