@@ -42,6 +42,7 @@ void UpdatePLRU(int PLRU[], int w );
 uint8_t VictimPLRU(int PLRU[]);
 int GetSnoopResult(unsigned int address);
 int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays);
+void Miss_Invalid(Set *index[], int set_index, int tag, int *InvalidWays);
 
 int main(int argc, char *argv[]) {
 
@@ -196,6 +197,17 @@ int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays){
         }
     }
     return 0; //Miss
+}
+
+// For miss and invalid ways
+void Miss_Invalid(Set *index[], int set_index, int tag, int *InvalidWays) {
+    if (InvalidWays != NULL) {
+        index[set_index]->ways[*InvalidWays]->tag = tag;
+        //index[set_index]->ways[*InvalidWays]->mesi = MESI_FUNC(); // Update MESI state
+        fprintf(stderr, "You got a cache miss but invalid way %d\n", *InvalidWays);
+    } else {
+        fprintf(stderr, "No invalid ways available for replacement!\n");
+    }
 }
 
 
