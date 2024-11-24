@@ -5,7 +5,6 @@
  * Ameer Melli
  * Caleb Monti
  * Chris Kane-Pardy
- * Evan Brown
  * 
 * This is the test branch
 * gcc main.c -o test -DDEBUG (to run debug mode with prints)
@@ -23,6 +22,17 @@
 // Global variables
 uint64_t counter = 0;
 int mode = 1;       // 1 for normal, 0 for silent
+
+// Global Type Definitions
+typedef struct {
+    int mesi; // MESI state
+    int tag;  // Tag
+} Way;
+
+typedef struct {
+    int *plru;       // Pointer for PLRU bits (dynamic array)
+    Way **ways;      // Pointer to array of Way pointers (dynamic array)
+} Set;
 
 // Function Prototypes
 
@@ -61,55 +71,41 @@ int main(int argc, char *argv[]) {
 
     int plru_array[PLRU_ARRAY_SIZE];
 
-    // Set up cache arrays
-    
-    typedef struct {
-        int mesi;                   // One per way
-        int tag;
-    } Way;
+    Set *index[SETS]; // Array of Set pointers
 
-
-    typedef struct {
-        int plru[PLRU_ARRAY_SIZE]; // One per Set
-        Way *ways[ASSOCIATIVITY];  // One per set
-
-    } Set;
-
-    Set *index[SETS];
-
-
-    // Allocate memory for index and its components
     for (int i = 0; i < SETS; i++) {
+    index[i] = (Set *)malloc(sizeof(Set));
+    if (index[i] == NULL) {
+        perror("Failed to allocate memory for Set");
+        exit(EXIT_FAILURE);
+    }
 
+    index[i]->plru = (int *)malloc(PLRU_ARRAY_SIZE * sizeof(int));
+    if (index[i]->plru == NULL) {
+        perror("Failed to allocate memory for PLRU array");
+        exit(EXIT_FAILURE);
+    }
 
-        
-        index[i] = (Set *)malloc(sizeof(Set));
-        if (index[i] == NULL) {
-            perror("Failed to allocate memory for Set");
+    for (int j = 0; j < PLRU_ARRAY_SIZE; j++) {
+        index[i]->plru[j] = 0;
+    }
+
+    index[i]->ways = (Way **)malloc(ASSOCIATIVITY * sizeof(Way *));
+    if (index[i]->ways == NULL) {
+        perror("Failed to allocate memory for Way array");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int k = 0; k < ASSOCIATIVITY; k++) {
+        index[i]->ways[k] = (Way *)malloc(sizeof(Way));
+        if (index[i]->ways[k] == NULL) {
+            perror("Failed to allocate memory for Way");
             exit(EXIT_FAILURE);
         }
-
-        for (int l = 0; l < PLRU_ARRAY_SIZE; l++) {
-            index[i]->plru[l] = 0;
-        }
-
-        
-        for (int k = 0; k < ASSOCIATIVITY; k++) {
-
-            index[i]->ways[k] = (Way *)malloc(sizeof(Way));
-            if (index[i]->ways[k] == NULL) {
-                perror("Failed to allocate memory for Way");
-                exit(EXIT_FAILURE);
-            }
-
-            index[i]->ways[k]->mesi = INVALID;
-
-            
-                counter++;
-                index[i]->ways[k]->tag = 0;
-        }
-        
+        index[i]->ways[k]->mesi = INVALID;
+        index[i]->ways[k]->tag = 0;
     }
+}
 
     #ifdef DEBUG
     fprintf(stderr, "Number of sets: %d\n", SETS);
@@ -196,7 +192,7 @@ int hit_or_miss(Set *index[], int set_index, int tag, int *InvalidWays){
             return 1; //Hit
         }
         else if (way->mesi == INVALID) {
-            InvalidWays = i;
+            *InvalidWays = i;
         }
     }
     return 0; //Miss
