@@ -19,7 +19,7 @@
 #include <stdint.h>
 
 /*####################### Global variables ###########################*/
-int mode = 1;       // 1 for normal, 0 for silent
+int mode = 0;       // 1 for normal, 0 for silent
 uint32_t address;
 int operation;
 
@@ -47,7 +47,7 @@ int GetSnoopResult(unsigned int address);
 // Determine if newest input address is a Hit or Miss, and act accordingly
 int hit_or_miss(Set *index[], int set_index, int tag);
 // Determine MESI state updates based upon Snoop Results
-void MESI_set(int* mesi, unsigned int address, int operation);
+void MESI_set(int* mesi, unsigned int address, int operation, int hm);
 
 int main(int argc, char *argv[]) {
 
@@ -154,10 +154,10 @@ int main(int argc, char *argv[]) {
         // Call "hit_or_miss" to determine result
         int CacheResult = hit_or_miss(index, set_index, tag);
         // Print CacheResult
-        if (mode && CacheResult) {
-        printf("Hit!\n");
+        if (CacheResult) {
+         if(mode) printf("Hit!\n");
         } else {
-        printf("Miss!\n");
+        if (mode) printf("Miss!\n");
         }} else {
         // If Debug is Active, Display Operation and Address Components
         #ifdef DEBUG
@@ -207,6 +207,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         if (way->mesi != INVALID && way->tag == tag) {
             // Update PLRU to reflect MRU (Hit)
             UpdatePLRU(index[set_index]->plru, i);
+            MESI_set( &(index[set_index]->ways[i]->mesi), address, operation, 1);
             return 1; //Hit
         }
         //If not a hit, and there is an invalid way, mark the invalid way to be "filled" upon miss
@@ -219,14 +220,14 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     if(InvalidWays >= 0) {
         Way *invalid_way =index[set_index]->ways[InvalidWays]; // Navigate to way in active set with an INVALID MESI state
         invalid_way->tag = tag; // Place new tag at current way
-        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), address, operation); // Update MESI State based off snoop results
+        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), address, operation, 0); // Update MESI State based off snoop results
         UpdatePLRU(index[set_index]->plru, InvalidWays); // Update PLRU for the newly entered way
     // Miss with a full set
     } else {
         int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways); // Decide which way is a the LRU
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
-        MESI_set(&(victim_eviction->mesi), address, operation); // Update MESI State based off snoop results
+        MESI_set(&(victim_eviction->mesi), address, operation, 0); // Update MESI State based off snoop results
         UpdatePLRU(index[set_index]->plru, victim_line); // Update PLRU for the newly entered way
     }
     return 0; //Miss
@@ -286,7 +287,7 @@ int GetSnoopResult(unsigned int address) {
 }
 
 // Determine MESI state updates based upon Snoop Results
-void MESI_set(int* mesi, unsigned int address, int operation){
+void MESI_set(int* mesi, unsigned int address, int operation, int hm){
 
     int snoop = GetSnoopResult(address);
 
@@ -300,20 +301,22 @@ void MESI_set(int* mesi, unsigned int address, int operation){
             fprintf(stderr, "Case 0 or 2\n");
             #endif
 
+            if(hm) break;
+
             if (mode) printf("Performing a BusRead Operation\n");
             if (snoop == HIT){
 
-                if (mode) printf("Snoop Result was HIT, moving to Shared\n");
+                if (mode) printf("Snoop Result was HIT, reading from DRAM, moving to Shared\n");
                 *mesi = SHARED;
             }
-            else if (snoop == HITM) {
+            else if (snoop == HITM && operation != 1) {
 
-                if (mode) printf("Snoop Result was HITM, moving to Shared\n");
+                if (mode) printf("Snoop Result was HITM, waiting for writeback, reading from DRAM, then moving to Shared\n");
                 *mesi = SHARED;
             }
             else{
 
-                if (mode) printf("Snoop Result was MISS, movving to Exclusive\n");
+                if (mode) printf("Snoop Result was MISS, reading from DRAM, moving to Exclusive\n");
                 *mesi = EXCLUSIVE;
             }
             #ifdef DEBUG
@@ -322,35 +325,69 @@ void MESI_set(int* mesi, unsigned int address, int operation){
 
             break;
         case WRITE_HD: // n = 1
-            if (*mesi == INVALID) if (mode) printf("Performing a BusRdX Operation for address 0x%8X, moving to Modified\n", address);
-            if (*mesi == SHARED) if (mode) printf("Performing a BusUpgr Operation for address 0x%8X, moving to Modified\n", address);
-            *mesi = MODIFIED;
+            if (*mesi == INVALID) { 
+                if (mode) printf("Performing a BusRdX Operation for address 0x%8X, moving to Modified\n", address);
+                *mesi = MODIFIED;
+            } 
+            else if (*mesi == SHARED) { 
+                if (mode) printf("Performing a BusUpgr Operation for address 0x%8X, moving to Modified\n", address);
+                *mesi = MODIFIED;
+            }
+            else if (*mesi == EXCLUSIVE) { 
+                if (mode) printf("No Bus Operation, moving to Modified\n");
+                *mesi = MODIFIED;
+            }
+            else {
+                if (mode) printf("No Bus Operation, already in Modified\n");
+
+            }
+            
             break;
         case READ_S: // n = 3
 
             if (*mesi == EXCLUSIVE) {
                 if (mode) printf("Snooped a BusRd Operation for address 0x%8X while I am Exclusive, moving to Shared\n", address);
+                if (mode) printf("Echoing a HIT for address 0x%8X\n", address);
                 *mesi = SHARED;
             }
             else if (*mesi == MODIFIED) {
                 if (mode) printf("Snooped a BusRd Operation for address 0x%8X while I have it Modified, flushing contents to DRAM and moving to Shared\n", address);
+                if (mode) printf("Echoing a HITM for address 0x%8X\n", address);
                 *mesi = SHARED;
             }
-            else if (*mesi == SHARED) { if (mode) printf("Snooped a BusRd Operation for address 0x%8X while I have it Shared, no changes here\n", address); }
+            else if (*mesi == SHARED) { 
+                if (mode) printf("Snooped a BusRd Operation for address 0x%8X while I have it Shared, no changes here\n", address); 
+                if (mode) printf("Echoing a HIT for address 0x%8X\n", address);
+                }
             else{ 
-                if(mode) printf("Snooped a BusRd Operation for address 0x%8X while I have it Invalid, no changes here\n", address); 
+                if(mode) printf("Snooped a BusRd Operation for address 0x%8X while I have it Invalid, no changes here\n", address);
+                if(mode) printf("Echoing a MISS for address 0x%8X\n", address);
             }
         
         case RWIM_S: // n = 5
-        case WRITE_S: // n = 4
-        case INVALIDATE_S: // n = 6
-        case CLEAR: // n = 8
             if (*mesi == MODIFIED) { if (mode) printf("Snooped a BusRdX Operation for address 0x%8X while I have it Modified, flushing contents to DRAM and Invalidating \n", address); }
-            else if (*mesi == EXCLUSIVE) { if (mode) printf("Snooped a BusRdX Operation for address 0x%8X while I have it Exclusive, flushing contents to DRAM and Invalidating \n", address); }
-            else if (*mesi == SHARED) { if (mode) printf("Snooped either a BusRdX or BusUpgr Operation for address 0x%8X while I have it shared, Invalidating\n", address); }
-            else {if(mode) printf("Snooped a BusRdX or BusUpgr Operation for address 0x%8X while I have it Invalid, no changes here\n", address); }
+            else if (*mesi == EXCLUSIVE) { if (mode) printf("Snooped a BusRdX Operation for address 0x%8X while I have it Exclusive, Invalidating \n", address); }
+            else if (*mesi == SHARED) { fprintf(stderr, "0x%8X Address shared and gathered RWIM. Not a valid state.\n", address); }
+            else {  if(mode) printf("Snooped a BusRdX for address 0x%8X while I have it Invalid, no changes here\n", address); }
             *mesi = INVALID;
             break;
+
+        case WRITE_S: // n = 4
+            if (*mesi == MODIFIED) { if (mode) printf("Snooped a Write Request for address 0x%8X while I have it Modified, flushing contents to DRAM and Invalidating \n", address); }
+            else if (*mesi == EXCLUSIVE) { if (mode) printf("Snooped a Write Request for address 0x%8X while I have it Exclusive, Invalidating \n", address); }
+            else if (*mesi == SHARED) { if (mode) printf("Snooped a Write Request for address 0x%8X while I have it shared, Invalidating\n", address); }
+            else {  if(mode) printf("Snooped a Write Request for address 0x%8X while I have it Invalid, no changes here\n", address); }
+            *mesi = INVALID;
+            break;
+
+        case INVALIDATE_S: // n = 6
+            if (*mesi == MODIFIED) { if (mode) fprintf(stderr, "0x%8X Address Modified and gathered Invalidate. Not a valid state.\n", address); }
+            else if (*mesi == EXCLUSIVE) { if (mode) fprintf(stderr, "0x%8X Address Exclusive and gathered Invalidate. Not a valid state.\n", address); }
+            else if (*mesi == SHARED) { if (mode) printf("Snooped BusUpgr Operation for address 0x%8X while I have it shared, Invalidating\n", address); }
+            else {  if(mode) printf("Snooped a BusUpgr Operation for address 0x%8X while I have it Invalid, no changes here\n", address); }
+            *mesi = INVALID;
+            break;
+
         default:
             fprintf(stderr,"Invalid Operation");
             exit(-1);
