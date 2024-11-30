@@ -15,11 +15,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "defines.c"
 #include <stdint.h>
+#include <math.h>
+#include <string.h>
+#include "defines.c"
 
 /*####################### Global variables ###########################*/
-int mode = 0;       // 1 for normal, 0 for silent
+int mode = 1;       // 1 for normal, 0 for silent
 uint32_t address;
 int operation;
 
@@ -52,7 +54,25 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm);
 int main(int argc, char *argv[]) {
 
     // Add flags for setting non-default variables
-    //----------------------------ADD VERY IMPORTANT------------------------------------------------------------------ TODO
+    //TODO ----------------------------ADD VERY IMPORTANT------------------------------------------------------------------ 
+
+    for( argc--, argv++; argc > 0; argc-=2, argv+=2 ) {
+		if (strcmp(argv[0], "-m" ) == 0 ) {
+            // silent or normal
+        }
+		else if (strcmp(argv[0], "-r" ) == 0 ) {
+
+        }
+		else if (strcmp(argv[0], "-l" ) == 0 ) {
+
+        }
+		else if (strcmp(argv[0], "-t" ) == 0 ){
+
+		}
+		else { 
+			printf("\nInvalid Arguments\n"); exit(-1); 
+		}
+	}
 
     /* MEMORY SIZE CALCULATIONS */
     const int TRUE_CAPACITY = pow(2,CACHE_SIZE);

@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <math.h>
-
 /* MESI Types */
 #define INVALID 0b00	/* Data is invalid */
 #define SHARED 0b01	/* Data is shared in other caches */
@@ -37,7 +34,7 @@
 #define PRINT 0b1001		/* Print content and state of each valid cache line */
 
 /* Memory Size Defaults */
-#define CACHE_SIZE 26		/* 2^(CACHE_SIZE) = True Capacity in Bytes */
+#define CACHE_SIZE 24		/* 2^(CACHE_SIZE) = True Capacity in Bytes */
 #define CACHE_LINE_SIZE 64	/* Number of bytes per line */
 #define ADDRESS_SIZE 32		/* Number of bits in address (no need to change) */
 #define ASSOCIATIVITY 16		/* Number of ways per set */
