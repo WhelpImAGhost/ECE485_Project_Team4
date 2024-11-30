@@ -21,7 +21,7 @@
 #include "defines.c"
 
 /*####################### Global variables ###########################*/
-int mode = 1;       // 1 for normal, 0 for silent
+int mode = 0;       // Default mode for output is Silent
 uint32_t address;
 int operation;
 
@@ -53,29 +53,51 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm);
 
 int main(int argc, char *argv[]) {
 
-    // Add flags for setting non-default variables
-    //TODO ----------------------------ADD VERY IMPORTANT------------------------------------------------------------------ 
+
+    // Set default filename
+    char *default_filename = "Default.din";
+    char *filename = default_filename;
+
+    int cache_size = CACHE_SIZE;
+
+    
+
+    // Flags for setting non-default variable vvalues
 
     for( argc--, argv++; argc > 0; argc-=2, argv+=2 ) {
-		if (strcmp(argv[0], "-m" ) == 0 ) {
-            // silent or normal
-        }
-		else if (strcmp(argv[0], "-r" ) == 0 ) {
-
-        }
-		else if (strcmp(argv[0], "-l" ) == 0 ) {
-
-        }
-		else if (strcmp(argv[0], "-t" ) == 0 ){
-
-		}
+		if (strcmp(argv[0], "-m" ) == 0 ) 
+            mode = atoi(argv[1]); // Set normal operation
+		else if (strcmp(argv[0], "-f" ) == 0 ) 
+            filename = argv[1]; // Set input file
+        else if (strcmp(argv[0], "-c") == 0)
+            cache_size = atoi(argv[1]);
 		else { 
 			printf("\nInvalid Arguments\n"); exit(-1); 
 		}
 	}
 
+    // Check if user provided a filename as an argument
+
+    FILE *file = fopen(filename, "r");
+
+    // If the provided file can't be opened, try the default file
+    if (file == NULL) {
+        fprintf(stderr, "The '%s' file provided could not be opened. Attempting to open default file '%s'.\n", filename, default_filename);
+        filename = default_filename;
+        file = fopen(filename, "r");
+    }
+
+    // Check if the file (either provided or default) was successfully opened
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    // Display active file name
+    fprintf(stderr, "Using file: %s\n", filename);
+
     /* MEMORY SIZE CALCULATIONS */
-    const int TRUE_CAPACITY = pow(2,CACHE_SIZE);
+    const int TRUE_CAPACITY = pow(2,cache_size);
     const int LINES = (TRUE_CAPACITY / CACHE_LINE_SIZE);
     const int SETS = (LINES / ASSOCIATIVITY);
 
@@ -134,34 +156,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Number of sets: %d\n", SETS);
     #endif
 
-    // Set default filename
-    const char *default_filename = "Default.din";
-    const char *filename;
-
-    // Check if user provided a filename as an argument
-    if (argc > 1) {
-        filename = argv[1];
-    } else {
-        filename = default_filename;
-    }
-
-    FILE *file = fopen(filename, "r");
-
-    // If the provided file can't be opened, try the default file
-    if (file == NULL && argc > 1) {
-        fprintf(stderr, "The '%s' file provided could not be opened. Attempting to open default file '%s'.\n", filename, default_filename);
-        filename = default_filename;
-        file = fopen(filename, "r");
-    }
-
-    // Check if the file (either provided or default) was successfully opened
-    if (file == NULL) {
-        perror("Error opening file");
-        return 1;
-    }
-
-    // Display active file name
-    fprintf(stderr, "Using file: %s\n", filename);
+    
 
     int tag, set_index, byte_select;
 
