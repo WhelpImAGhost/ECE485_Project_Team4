@@ -57,9 +57,8 @@ int main(int argc, char *argv[]) {
     // Set default filename
     char *default_filename = "Default.din";
     char *filename = default_filename;
-
     int cache_size = CACHE_SIZE;
-
+    int tag, set_index, byte_select;
     
 
     // Flags for setting non-default variable vvalues
@@ -75,6 +74,10 @@ int main(int argc, char *argv[]) {
 			printf("\nInvalid Arguments\n"); exit(-1); 
 		}
 	}
+
+    #ifdef DEBUG
+        mode = 1;
+    #endif
 
     // Check if user provided a filename as an argument
 
@@ -157,17 +160,57 @@ int main(int argc, char *argv[]) {
         index[i]->ways[k]->tag = 0;
     }
 }
-    // Print # of Sets for Debugging
-    #ifdef DEBUG
-    fprintf(stderr, "Number of sets: %d\n", SETS);
-    #endif
 
-    
 
-    int tag, set_index, byte_select;
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
+
+        switch (operation) {
+
+            case READ_HD:		    /* Read request from higher data cache */
+                break;
+
+
+            case WRITE_HD:		    /* Write request from higher data cache */
+                break;
+
+                
+            case READ_HI: 		    /* Read request from higher instruction cache */
+                break;
+
+
+            case READ_S: 		    /* Snoop read request */
+                break;
+
+                
+            case WRITE_S: 		    /* Snoop write request */
+                break;
+
+
+            case RWIM_S: 		    /* Snoop read with intent to modify request */
+                break;
+
+
+            case INVALIDATE_S: 	    /* Snoop invalidate command */
+                break;
+
+
+            case CLEAR: 		    /* Clear the cache and reset all states */
+                break;
+
+
+            case PRINT: 		    /* Print content and state of each valid cache line */      
+                break;
+
+
+            default:
+                fprintf(stderr,"Invalid Operation");
+                exit(-1);
+        }
+
+
+        /*
         // Breakdown address into proper components for storage in the cache
         extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
         // Determine if Hit or Miss on CPU command
@@ -188,7 +231,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
         #endif
         }
-
+        */
     }
     fclose(file);  // Close the file
 
