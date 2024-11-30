@@ -50,6 +50,10 @@ int GetSnoopResult(unsigned int address);
 int hit_or_miss(Set *index[], int set_index, int tag);
 // Determine MESI state updates based upon Snoop Results
 void MESI_set(int* mesi, unsigned int address, int operation, int hm);
+// Clear cache contents for Operation Code 8
+void clear_cache (Set *index[], int sets, int plru_size, int assoc);
+// Print cache contents for Operation Code 9
+void print_cache (Set *index[], int sets, int plru_size, int assoc);
 
 int main(int argc, char *argv[]) {
 
@@ -59,7 +63,7 @@ int main(int argc, char *argv[]) {
     char *filename = default_filename;
     int cache_size = CACHE_SIZE;
     int tag, set_index, byte_select;
-    
+    int CacheResult;
 
     // Flags for setting non-default variable vvalues
 
@@ -113,6 +117,8 @@ int main(int argc, char *argv[]) {
     const int PLRU_ARRAY_SIZE = (ASSOCIATIVITY - 1);
     const int TOTAL_TAG_ARRAY = (SETS * ((ASSOCIATIVITY * (TAG_BITS + TAG_ARRAY_MESI)) + PLRU_ARRAY_SIZE)) / 8; 	
 
+    
+
     #ifdef DEBUG
     fprintf(stderr,"Cache Capacity: %d bytes, # of Cache Lines: %d, # of Sets: %d\n",TRUE_CAPACITY,LINES,SETS);
     fprintf(stderr," # of Byte Select Bits: %d bits, # of Tndex Bits: %d bits, # of Tag Bits: %d bits\n",BYTE_SELECT_BITS,INDEX_BITS,TAG_BITS);
@@ -128,79 +134,123 @@ int main(int argc, char *argv[]) {
 
     /*################## Initializing Data Structures #################*/
     for (int i = 0; i < SETS; i++) {
-    index[i] = (Set *)malloc(sizeof(Set));
-    if (index[i] == NULL) {
-        perror("Failed to allocate memory for Set");
-        exit(EXIT_FAILURE);
-    }
-
-    index[i]->plru = (int *)malloc(PLRU_ARRAY_SIZE * sizeof(int));
-    if (index[i]->plru == NULL) {
-        perror("Failed to allocate memory for PLRU array");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int j = 0; j < PLRU_ARRAY_SIZE; j++) {
-        index[i]->plru[j] = 0;
-    }
-
-    index[i]->ways = (Way **)malloc(ASSOCIATIVITY * sizeof(Way *));
-    if (index[i]->ways == NULL) {
-        perror("Failed to allocate memory for Way array");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int k = 0; k < ASSOCIATIVITY; k++) {
-        index[i]->ways[k] = (Way *)malloc(sizeof(Way));
-        if (index[i]->ways[k] == NULL) {
-            perror("Failed to allocate memory for Way");
+        index[i] = (Set *)malloc(sizeof(Set));
+        if (index[i] == NULL) {
+            perror("Failed to allocate memory for Set");
             exit(EXIT_FAILURE);
         }
-        index[i]->ways[k]->mesi = INVALID;
-        index[i]->ways[k]->tag = 0;
+
+        index[i]->plru = (int *)malloc(PLRU_ARRAY_SIZE * sizeof(int));
+        if (index[i]->plru == NULL) {
+            perror("Failed to allocate memory for PLRU array");
+            exit(EXIT_FAILURE);
+        }
+
+        for (int j = 0; j < PLRU_ARRAY_SIZE; j++) {
+            index[i]->plru[j] = 0;
+        }
+
+        index[i]->ways = (Way **)malloc(ASSOCIATIVITY * sizeof(Way *));
+        if (index[i]->ways == NULL) {
+            perror("Failed to allocate memory for Way array");
+            exit(EXIT_FAILURE);
+        }
+
+        for (int k = 0; k < ASSOCIATIVITY; k++) {
+            index[i]->ways[k] = (Way *)malloc(sizeof(Way));
+            if (index[i]->ways[k] == NULL) {
+                perror("Failed to allocate memory for Way");
+                exit(EXIT_FAILURE);
+            }
+            index[i]->ways[k]->mesi = INVALID;
+            index[i]->ways[k]->tag = 0;
+        }
     }
-}
 
 
 
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
 
+        // Breakdown address into proper components for storage in the cache
+        extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
+
+        // If Debug is Active, Display Operation and Address Components
+        #ifdef DEBUG
+            fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
+            fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
+            fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
+            fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
+        #endif
+
+
         switch (operation) {
 
             case READ_HD:		    /* Read request from higher data cache */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 0\n");
+                #endif
+                CacheResult = hit_or_miss(index, set_index, tag);
                 break;
 
 
             case WRITE_HD:		    /* Write request from higher data cache */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 1\n");
+                #endif
+                CacheResult = hit_or_miss(index, set_index, tag);
                 break;
 
                 
             case READ_HI: 		    /* Read request from higher instruction cache */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 2\n");
+                #endif
+                CacheResult = hit_or_miss(index, set_index, tag);
                 break;
 
 
             case READ_S: 		    /* Snoop read request */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 3\n");
+                #endif
                 break;
 
                 
             case WRITE_S: 		    /* Snoop write request */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 4\n");
+                #endif
                 break;
 
 
             case RWIM_S: 		    /* Snoop read with intent to modify request */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 5\n");
+                #endif
                 break;
 
 
             case INVALIDATE_S: 	    /* Snoop invalidate command */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 6\n");
+                #endif
                 break;
 
 
             case CLEAR: 		    /* Clear the cache and reset all states */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 8\n");
+                #endif
+                clear_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
                 break;
 
 
-            case PRINT: 		    /* Print content and state of each valid cache line */      
+            case PRINT: 		    /* Print content and state of each valid cache line */
+                #ifdef DEBUG
+                    fprintf(stderr, "Case 9\n");
+                #endif
+                print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
                 break;
 
 
@@ -209,6 +259,12 @@ int main(int argc, char *argv[]) {
                 exit(-1);
         }
 
+        #ifdef DEBUG
+
+            print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
+            clear_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
+            print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
+        #endif
 
         /*
         // Breakdown address into proper components for storage in the cache
@@ -263,8 +319,8 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         Way *way = index[set_index]->ways[i];
 
         #ifdef DEBUG
-        fprintf(stderr, "Current tag: 0x%2X, New tag: 0x%2X\n" , way->tag, tag );
-        fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
+        //fprintf(stderr, "Current tag: 0x%2X, New tag: 0x%2X\n" , way->tag, tag );
+        //fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
         #endif
         // Hit if MESI bits are not "INVALID" and address tag == cached tag
 
@@ -462,3 +518,32 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm){
 
 }
 
+void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
+
+    for (int i = 0; i < sets; i++){
+
+        for (int j = 0; j < plru_size; j++) {
+            index[i]->plru[j] = 0;
+        }
+
+        for (int k = 0; k < assoc; k++) {
+            index[i]->ways[k]->mesi = INVALID;
+            index[i]->ways[k]->tag = 0;
+        }
+    }
+    return;
+}
+
+
+void print_cache (Set *index[], int sets, int plru_size, int assoc) {
+
+    for (int i = 0; i < sets; i++){
+
+        for (int k = 0; k < assoc; k++) {
+            if (index[i]->ways[k]->mesi != INVALID) {
+                printf("Cache contents for Set %d way %d: MESI STATE %d, TAG: %4X\n", i, k, index[i]->ways[k]->mesi, index[i]->ways[k]->tag );
+            }
+        }
+    }
+    return;
+}
