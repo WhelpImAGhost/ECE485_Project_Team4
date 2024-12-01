@@ -217,11 +217,11 @@ int main(int argc, char *argv[]) {
                 cache_statistics(operation, CacheResult, finished_program);
                 if (CacheResult) {
                     if(mode){
-                        printf("PrWr HIT @ 0x%08X, %s\n", address, mesi_state); //TODO add MESI bits
-                        if ( !strcmp(mesi_state, "EXCLUSIVE") || !strcmp(mesi_state, "MODIFIED") ){
+                        printf("PrWr HIT @ 0x%08X, %s\n", address, mesi_state);
+                        if ( strcmp(mesi_state,"EXCLUSIVE") == 0 || strcmp(mesi_state,"MODIFIED") == 0 ){
                             break;
                         }
-                        else if( !strcmp(mesi_state, "SHARED") ){
+                        else if( strcmp(mesi_state,"SHARED") == 0 ){
                             printf("BusUpgr @ 0x%08X\n", (address & ~(0x3F)));
                         }
                     }
