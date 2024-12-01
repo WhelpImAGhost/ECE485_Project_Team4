@@ -54,6 +54,8 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm);
 void clear_cache (Set *index[], int sets, int plru_size, int assoc);
 // Print cache contents for Operation Code 9
 void print_cache (Set *index[], int sets, int plru_size, int assoc);
+// Print correct statements to simulate communication from this cache to higher cache level
+void inclusive_print(int state, unsigned int address);
 
 int main(int argc, char *argv[]) {
 
@@ -550,5 +552,30 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
             }
         }
     }
+    return;
+}
+
+
+void inclusive_print(int state, unsigned int address){
+
+    switch(state) {
+
+        case GETLINE:
+            if(mode) printf("L2: GET_LINE 0x%8X", address);
+            break;
+        case SENDLINE:
+            if(mode) printf("L2: SEND_LINE 0x%8X", address);
+            break;
+        case INVALIDATELINE:
+            if(mode) printf("L2: INVALIDATE_LINE 0x%8X", address);
+            break;
+        case EVICTLINE:
+            if(mode) printf("L2: EVICT_LINE 0x%8X", address);
+            break;
+        default:
+            fprintf(stderr, "Invalid state in inclusive_print function\n");
+            exit(-1);
+    }
+
     return;
 }

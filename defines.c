@@ -17,10 +17,10 @@
 #define RWIM 0b11		/* Bus Read with Intent to Modify */
 
 /* Current to Higher Cache Message Types */
-#define REQUEST 0b00	/* Request a modified line from higher cache */
-#define SEND 0b01		/* Send a requested line to higher cache */
-#define INVALIDATE 0b10	/* Invalidate a line in higher cache */
-#define EVICT 0b11		/* Evict a line in higher cache */
+#define GETLINE 0b00	/* Request a modified line from higher cache */
+#define SENDLINE 0b01		/* Send a requested line to higher cache */
+#define INVALIDATELINE 0b10	/* Invalidate a line in higher cache */
+#define EVICTLINE 0b11		/* Evict a line in higher cache */
 
 /* Address Operations */
 #define READ_HD 0b0000		/* Read request from higher data cache */
