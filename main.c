@@ -224,7 +224,6 @@ int main(int argc, char *argv[]) {
                             inclusive_print(SENDLINE);
                         }
                 }
-                
                 break;
 
                 
