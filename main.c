@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
                         printf("\nBusRd @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
                         if(strcmp(snoop_reply,"HITM")==0){
                             inclusive_print(GETLINE);
-                            printf("FlushWB @ 0x%08X, MESI State: %s\n", address, mesi_state);       
+                            printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
                         } else if( (strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
                             printf("L2 MESI State: %s", mesi_state);
                         }
@@ -483,9 +483,11 @@ int SnoopChecker(Set *index[], int set_index, int tag) {
         if (way->mesi != INVALID && way->tag == tag) {
             if (way->mesi == MODIFIED) {
                 MESI_set(&(index[set_index]->ways[i]->mesi), operation, 1);
+                strcpy(mesi_state, (index[set_index]->ways[i]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[i]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[i]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[i]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
                 return HITM; // Hit in Modified state
             } else if (way->mesi == EXCLUSIVE || way->mesi == SHARED) {
                 MESI_set(&(index[set_index]->ways[i]->mesi), operation, 1);
+                strcpy(mesi_state, (index[set_index]->ways[i]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[i]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[i]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[i]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
                 return HIT; // Hit in Exclusive or Shared state
             }
         }
