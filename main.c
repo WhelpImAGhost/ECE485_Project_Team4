@@ -220,9 +220,9 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 2\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag);
+                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 if (CacheResult) {
-                    if(mode){ printf("PrRd HIT @ 0x%08X, %c\n", address, ); //TODO add MESI bits
+                    if(mode){ printf("PrRd HIT @ 0x%08X, %c\n", address,mesi_state ); //TODO add MESI bits
                     }
                 }else {
                     if(mode){ 
