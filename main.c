@@ -49,7 +49,7 @@ uint8_t VictimPLRU(int PLRU[], Way *way);
 // Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
 int GetSnoopResult(char* snoop_state);
 // Determine if newest input address is a Hit or Miss, and act accordingly
-int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state);
+int hit_or_miss(Set *index[], int set_index, int tag);
 // Determine MESI state updates based upon Snoop Results
 void MESI_set(int* mesi, int operation, int hm);
 // Clear cache contents for Operation Code 8
@@ -189,14 +189,14 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 0\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
+                CacheResult = hit_or_miss(index, set_index, tag);
                 if (CacheResult) {
-                    if(mode){printf("PrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
+                    if(mode){printf("PrRd0 HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
                     }
                 }else {
                     if(mode){
-                        printf("PrRd MISS @ 0x%08X\n", address);
-                        printf("BusRd @ 0x%08X, Snoop Result:, MESI State: %s\n", (address & ~(0x3F))), mesi_state; //TODO Snoop Result
+                        printf("PrRd0 MISS @ 0x%08X\n", address);
+                        printf("BusRd @ 0x%08X, Snoop Result:, MESI State: %s\n", (address & ~(0x3F)), mesi_state); //TODO Snoop Result
                         inclusive_print(SENDLINE);
                     }
                 }
@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 1\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
+                CacheResult = hit_or_miss(index, set_index, tag);
                 break;
 
                 
@@ -214,13 +214,13 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 2\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
+                CacheResult = hit_or_miss(index, set_index, tag);
                 if (CacheResult) {
-                    if(mode){ printf("PrRd HIT @ 0x%08X, %s\n", address,mesi_state ); //TODO add MESI bits
+                    if(mode){ printf("PrRd1 HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
                     }
                 }else {
                     if(mode){ 
-                        printf("PrRd MISS @ 0x%08X\n", address);
+                        printf("PrRd1 MISS @ 0x%08X\n", address);
                         printf("BusRd @ 0x%08X, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
                         inclusive_print(SENDLINE); //Add Mesi Bit
                     }
@@ -301,8 +301,9 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 }
 
 // Determine if newest input address is a Hit or Miss, and act accordingly
-int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state){
+int hit_or_miss(Set *index[], int set_index, int tag){
     // Refresh InvalidWays for each function run
+    strcmp(mesi_state,"INVALID");
     int InvalidWays = -1;
     // Read through each way in the active set to determine if hit
     for (int i = 0; i < ASSOCIATIVITY; i++){
@@ -318,7 +319,10 @@ int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state){
             // Update PLRU to reflect MRU (Hit)
             UpdatePLRU(index[set_index]->plru, i);
             MESI_set( &(index[set_index]->ways[i]->mesi), operation, 1);
-            strcpy(mesi_state, (way->mesi == INVALID) ? "INVALID" : ((way->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((way->mesi == SHARED) ? "SHARED" : ((way->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
+            strcpy(mesi_state, (index[set_index]->ways[i]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[i]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[i]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[i]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
+            #ifdef DEBUG
+                fprintf(stderr, "MESI result: %s\n", mesi_state);
+            #endif
             return 1; //Hit
         }
         //If not a hit, and there is an invalid way, mark the invalid way to be "filled" upon miss
@@ -332,7 +336,10 @@ int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state){
         Way *invalid_way =index[set_index]->ways[InvalidWays]; // Navigate to way in active set with an INVALID MESI state
         invalid_way->tag = tag; // Place new tag at current way
         MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), operation, 0); // Update MESI State based off snoop results
-        strcpy(mesi_state, (invalid_way->mesi == INVALID) ? "INVALID" : ((invalid_way->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((invalid_way->mesi == SHARED) ? "SHARED" : ((invalid_way->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
+        strcpy(mesi_state, (index[set_index]->ways[InvalidWays]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[InvalidWays]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[InvalidWays]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[InvalidWays]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
+        #ifdef DEBUG
+            fprintf(stderr, "MESI result: %s\n", mesi_state);
+        #endif
         UpdatePLRU(index[set_index]->plru, InvalidWays); // Update PLRU for the newly entered way
     // Miss with a full set
     } else {
@@ -341,7 +348,10 @@ int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state){
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
         MESI_set(&(victim_eviction->mesi), operation, 0); // Update MESI State based off snoop results
-        strcpy(mesi_state, (victim_eviction->mesi == INVALID) ? "INVALID" : ((victim_eviction->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((victim_eviction->mesi == SHARED) ? "SHARED" : ((victim_eviction->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
+        strcpy(mesi_state, (index[set_index]->ways[victim_line]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[victim_line]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[victim_line]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[victim_line]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
+        #ifdef DEBUG
+            fprintf(stderr, "MESI result: %s\n", mesi_state);
+        #endif
         UpdatePLRU(index[set_index]->plru, victim_line); // Update PLRU for the newly entered way
     }
     return 0; //Miss
@@ -439,44 +449,24 @@ void MESI_set(int* mesi, int operation, int hm){
         
         case READ_HD: // n = 0
         case READ_HI: // n = 2
-            #ifdef DEBUG
-            fprintf(stderr, "Case 0 or 2\n");
-            #endif
 
             if(hm) break;
 
             if (snoop == HIT){
                 *mesi = SHARED;
             }
-            else if (snoop == HITM && operation != 1) {
-
+            else if (snoop == HITM) {
                 *mesi = SHARED;
             }
             else{
-
                 *mesi = EXCLUSIVE;
             }
-            #ifdef DEBUG
-            fprintf(stderr, "New MESI: %d\n", *mesi);
-            #endif
 
             break;
         case WRITE_HD: // n = 1
-            if (*mesi == INVALID) { 
-                *mesi = MODIFIED;
-            } 
-            else if (*mesi == SHARED) { 
-                *mesi = MODIFIED;
-            }
-            else if (*mesi == EXCLUSIVE) { 
-                *mesi = MODIFIED;
-            }
-            else {
-                *mesi = MODIFIED;
-
-            }
-            
+            *mesi = MODIFIED;
             break;
+
         case READ_S: // n = 3
 
             if (*mesi == EXCLUSIVE) {
@@ -485,8 +475,7 @@ void MESI_set(int* mesi, int operation, int hm){
             else if (*mesi == MODIFIED) {
                 *mesi = SHARED;
             }
-            else if (*mesi == SHARED) { 
-                }
+
 
         case RWIM_S: // n = 5
             *mesi = INVALID;
