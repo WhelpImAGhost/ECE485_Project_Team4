@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
                 CacheResult = hit_or_miss(index, set_index, tag);
                 cache_statistics(operation, CacheResult, finished_program);
                 if (CacheResult) {
-                    if(mode){printf("PrRd0 HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
+                    if(mode){printf("PrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
                     }
                 }else {
                     if(mode){
@@ -218,10 +218,10 @@ int main(int argc, char *argv[]) {
                 if (CacheResult) {
                     if(mode){
                         printf("PrWr HIT @ 0x%08X, %s\n", address, mesi_state); //TODO add MESI bits
-                        if (mesi_state == "EXCLUSIVE" || mesi_state == "MODIFIED"){
+                        if ( !strcmp(mesi_state, "EXCLUSIVE") || !strcmp(mesi_state, "MODIFIED") ){
                             break;
                         }
-                        else if(mesi_state == "SHARED"){
+                        else if( !strcmp(mesi_state, "SHARED") ){
                             printf("BusUpgr @ 0x%08X\n", (address & ~(0x3F)));
                         }
                     }
