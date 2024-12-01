@@ -198,11 +198,11 @@ int main(int argc, char *argv[]) {
                 CacheResult = hit_or_miss(index, set_index, tag);
                 cache_statistics(operation, CacheResult, finished_program);
                 if (CacheResult) {
-                    if(mode){printf("PrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
+                    if(mode){printf("\nPrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
                     }
                 }else {
                     if(mode){
-                        printf("PrRd MISS @ 0x%08X\n", address);
+                        printf("\nPrRd MISS @ 0x%08X\n", address);
                         printf("BusRd @ 0x%08X, Snoop Result:, MESI State: %s\n", (address & ~(0x3F)), mesi_state); //TODO Snoop Result
                         inclusive_print(SENDLINE);
                     }
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
                 cache_statistics(operation, CacheResult, finished_program);
                 if (CacheResult) {
                     if(mode){
-                        printf("PrWr HIT @ 0x%08X, %s\n", address, mesi_state);
+                        printf("\nPrWr HIT @ 0x%08X, %s\n", address, mesi_state);
                         if ( strcmp(mesi_state,"EXCLUSIVE") == 0 || strcmp(mesi_state,"MODIFIED") == 0 ){
                             break;
                         }
@@ -227,7 +227,7 @@ int main(int argc, char *argv[]) {
                     }
                 }else {
                         if(mode){
-                            printf("PrWr MISS @ 0x%08X\n", address);
+                            printf("\nPrWr MISS @ 0x%08X\n", address);
                             printf("BusRdx @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
                             inclusive_print(SENDLINE);
                         }
@@ -242,11 +242,11 @@ int main(int argc, char *argv[]) {
                 CacheResult = hit_or_miss(index, set_index, tag);
                 cache_statistics(operation, CacheResult, finished_program);
                 if (CacheResult) {
-                    if(mode){ printf("PrRd1 HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
+                    if(mode){ printf("\nPrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
                     }
                 }else {
                     if(mode){ 
-                        printf("PrRd1 MISS @ 0x%08X\n", address);
+                        printf("\nPrRd MISS @ 0x%08X\n", address);
                         printf("BusRd @ 0x%08X, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
                         inclusive_print(SENDLINE); //Add Mesi Bit
                     }
