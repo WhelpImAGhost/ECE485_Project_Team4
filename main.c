@@ -113,7 +113,6 @@ int main(int argc, char *argv[]) {
     const int LINES = (TRUE_CAPACITY / CACHE_LINE_SIZE);
     const int SETS = (LINES / ASSOCIATIVITY);
 
-
     /* TAG ARRAY CALCULATIONS 
     Can be used for testing to verify that values can be changed correctly for modularity*/
     const int BYTE_SELECT_BITS = log2(CACHE_LINE_SIZE);
@@ -121,8 +120,6 @@ int main(int argc, char *argv[]) {
     const int TAG_BITS = ADDRESS_SIZE - (BYTE_SELECT_BITS + INDEX_BITS);
     const int PLRU_ARRAY_SIZE = (ASSOCIATIVITY - 1);
     const int TOTAL_TAG_ARRAY = (SETS * ((ASSOCIATIVITY * (TAG_BITS + TAG_ARRAY_MESI)) + PLRU_ARRAY_SIZE)) / 8; 	
-
-    
 
     #ifdef DEBUG
     fprintf(stderr,"Cache Capacity: %d bytes, # of Cache Lines: %d, # of Sets: %d\n",TRUE_CAPACITY,LINES,SETS);
@@ -172,8 +169,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-
-
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
 
@@ -188,27 +183,24 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
         #endif
 
-
-
         switch (operation) {
 
-            case READ_HD:		    /* Read request from higher data cache */
+            case READ_HD:           /* Read request from higher data cache */
                 #ifdef DEBUG
                     fprintf(stderr, "Case 0\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 if (CacheResult) {
-                    if(mode){ printf("PrRd HIT @ 0x%08X, %s\n", address, mesi_state ); //TODO add MESI bits
+                    if(mode){printf("PrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
                     }
                 }else {
-                    if(mode){ 
+                    if(mode){
                         printf("PrRd MISS @ 0x%08X\n", address);
-                        printf("BusRd @ 0x%08X, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
-                        inclusive_print(SENDLINE); //Add Mesi Bit
+                        printf("BusRd @ 0x%08X, Snoop Result:, MESI State: %s\n", (address & ~(0x3F))), mesi_state; //TODO Snoop Result
+                        inclusive_print(SENDLINE);
                     }
                 }
                 break;
-
 
             case WRITE_HD:		    /* Write request from higher data cache */
                 #ifdef DEBUG
