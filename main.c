@@ -194,11 +194,15 @@ int main(int argc, char *argv[]) {
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
                 if (CacheResult) {
-                    if(mode) printf("PrRd, HIT @ %d\n", address);
-                    //Inclusivity Statement
+                    if(mode){ printf("PrRd HIT @ %d MESI:\n", address); //TODO add MESI Bits
+                    
+                    }
                 }else {
-                    //
-                    if(mode) printf("PrRd MISS @ %d, BusRd \n", address);
+                    if(mode){ 
+                        printf("PrRd MISS @ %d\n", address);
+                        printf("BusRd @ %d, Snoop Result: %d\n", address); /*TODO Snoop Result*/
+                        //TODO Inclusivity Statement
+                    }
                 }
                 break;
 
@@ -546,16 +550,16 @@ void inclusive_print(int state, unsigned int address){
     switch(state) {
 
         case GETLINE:
-            if(mode) printf("L2: GET_LINE 0x%8X", address);
+            if(mode) printf("L2: GETLINE 0x%8X", address);
             break;
         case SENDLINE:
-            if(mode) printf("L2: SEND_LINE 0x%8X", address);
+            if(mode) printf("L2: SENDLINE 0x%8X", address);
             break;
         case INVALIDATELINE:
-            if(mode) printf("L2: INVALIDATE_LINE 0x%8X", address);
+            if(mode) printf("L2: INVALIDATELINE 0x%8X", address);
             break;
         case EVICTLINE:
-            if(mode) printf("L2: EVICT_LINE 0x%8X", address);
+            if(mode) printf("L2: EVICTLINE 0x%8X", address);
             break;
         default:
             fprintf(stderr, "Invalid state in inclusive_print function\n");
