@@ -47,7 +47,7 @@ uint8_t VictimPLRU(int PLRU[], Way *way);
 // Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
 int GetSnoopResult(unsigned int address);
 // Determine if newest input address is a Hit or Miss, and act accordingly
-int hit_or_miss(Set *index[], int set_index, int tag);
+int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state);
 // Determine MESI state updates based upon Snoop Results
 void MESI_set(int* mesi, int operation, int hm);
 // Clear cache contents for Operation Code 8
@@ -66,6 +66,7 @@ int main(int argc, char *argv[]) {
     int cache_size = CACHE_SIZE;
     int tag, set_index, byte_select;
     int CacheResult;
+    char mesi_state[12] = "INVALID";
 
     // Flags for setting non-default variable vvalues
 
@@ -186,15 +187,16 @@ int main(int argc, char *argv[]) {
         #endif
 
 
+
         switch (operation) {
 
             case READ_HD:		    /* Read request from higher data cache */
                 #ifdef DEBUG
                     fprintf(stderr, "Case 0\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag);
+                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 if (CacheResult) {
-                    if(mode){ printf("PrRd HIT @ 0x%08X, %c\n", address, ); //TODO add MESI bits
+                    if(mode){ printf("PrRd HIT @ 0x%08X, %s\n", address, mesi_state ); //TODO add MESI bits
                     }
                 }else {
                     if(mode){ 
@@ -210,7 +212,7 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 1\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag);
+                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 break;
 
                 
@@ -218,7 +220,7 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 2\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag);
+                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 break;
 
 
@@ -271,12 +273,6 @@ int main(int argc, char *argv[]) {
                 exit(-1);
         }
 
-        #ifdef DEBUG
-
-            print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
-            clear_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
-            print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
-        #endif
 
     }
     fclose(file);  // Close the file
@@ -301,7 +297,7 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 }
 
 // Determine if newest input address is a Hit or Miss, and act accordingly
-int hit_or_miss(Set *index[], int set_index, int tag){
+int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state){
     // Refresh InvalidWays for each function run
     int InvalidWays = -1;
     // Read through each way in the active set to determine if hit
@@ -318,6 +314,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
             // Update PLRU to reflect MRU (Hit)
             UpdatePLRU(index[set_index]->plru, i);
             MESI_set( &(index[set_index]->ways[i]->mesi), operation, 1);
+            strcpy(mesi_state, (way->mesi == INVALID) ? "INVALID" : ((way->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((way->mesi == SHARED) ? "SHARED" : ((way->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
             return 1; //Hit
         }
         //If not a hit, and there is an invalid way, mark the invalid way to be "filled" upon miss
@@ -331,6 +328,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         Way *invalid_way =index[set_index]->ways[InvalidWays]; // Navigate to way in active set with an INVALID MESI state
         invalid_way->tag = tag; // Place new tag at current way
         MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), operation, 0); // Update MESI State based off snoop results
+        strcpy(mesi_state, (invalid_way->mesi == INVALID) ? "INVALID" : ((invalid_way->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((invalid_way->mesi == SHARED) ? "SHARED" : ((invalid_way->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
         UpdatePLRU(index[set_index]->plru, InvalidWays); // Update PLRU for the newly entered way
     // Miss with a full set
     } else {
@@ -339,6 +337,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
         MESI_set(&(victim_eviction->mesi), operation, 0); // Update MESI State based off snoop results
+        strcpy(mesi_state, (victim_eviction->mesi == INVALID) ? "INVALID" : ((victim_eviction->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((victim_eviction->mesi == SHARED) ? "SHARED" : ((victim_eviction->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
         UpdatePLRU(index[set_index]->plru, victim_line); // Update PLRU for the newly entered way
     }
     return 0; //Miss
