@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
+#include <stdbool.h>
 #include "defines.c"
 
 /*####################### Global variables ###########################*/
@@ -54,6 +55,8 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm);
 void clear_cache (Set *index[], int sets, int plru_size, int assoc);
 // Print cache contents for Operation Code 9
 void print_cache (Set *index[], int sets, int plru_size, int assoc);
+// Print the cache statistics for hits, misses, reads, writes, and ratios 
+void cache_statistics(int operation, int CacheResult, bool finished_program);
 
 int main(int argc, char *argv[]) {
 
@@ -132,6 +135,9 @@ int main(int argc, char *argv[]) {
 
     Set *index[SETS]; // Array of Set Pointers
 
+    // This checks if the input file finished for the cache stats
+    bool finished_program = false;
+
     /*################## Initializing Data Structures #################*/
     for (int i = 0; i < SETS; i++) {
         index[i] = (Set *)malloc(sizeof(Set));
@@ -191,6 +197,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Case 0\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
+                cache_statistics(operation, CacheResult, finished_program);
                 break;
 
 
@@ -199,6 +206,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Case 1\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
+                cache_statistics(operation, CacheResult, finished_program);
                 break;
 
                 
@@ -207,6 +215,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Case 2\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
+                cache_statistics(operation, CacheResult, finished_program);
                 break;
 
 
@@ -289,6 +298,8 @@ int main(int argc, char *argv[]) {
         }
         */
     }
+    finished_program = true;
+    cache_statistics(operation, CacheResult, finished_program);
     fclose(file);  // Close the file
 
 return 0;
@@ -550,5 +561,39 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
             }
         }
     }
+    return;
+}
+
+void cache_statistics(int operation, int CacheResult, bool finished_program){
+
+    static int cache_reads = 0;
+    static int cache_writes = 0;
+    static int cache_hits = 0;
+    static int cache_misses = 0;
+    static float cache_hit_miss_ratio = 0;
+
+    // Needs to print in silent and normal mode and if program is finished
+    // Needs to stay up here since "operation" will remain and will count last one twice if not
+    if (finished_program) {
+        cache_hit_miss_ratio = (cache_hits + cache_misses > 0) ? (float)cache_hits / (cache_hits + cache_misses) : 0.0;
+        printf("Reads: %d, Writes: %d, Cache hits: %d, Cache misses: %d, Cache hit ratio: %.2f\n", 
+            cache_reads, cache_writes, cache_hits, cache_misses, cache_hit_miss_ratio);
+        return;
+    }
+
+    // Check to see if hit or miss
+    if (CacheResult) 
+        cache_hits++;
+    else 
+        cache_misses++;
+
+    // Check to see if read bus operation or read to modify
+    if (operation == READ || operation == RWIM) 
+        cache_reads++;
+
+    // Check to see if write bus operation
+    if (operation == WRITE) 
+        cache_writes++;
+
     return;
 }
