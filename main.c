@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
                 }else {
                     if(mode){ 
                         printf("\nPrRd MISS @ 0x%08X\n", address);
-                        printf("BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F))), snoop_state, mesi_state; //TODO Snoop Result
+                        printf("BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state); //TODO Snoop Result
                         inclusive_print(SENDLINE); //Add Mesi Bit
                     }
                 }
@@ -548,14 +548,28 @@ void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
 
 
 void print_cache (Set *index[], int sets, int plru_size, int assoc) {
-
+    bool check = false;
+    
     for (int i = 0; i < sets; i++){
 
-        printf("Set %d PLRU: ", i);
-        for (int j = 0; j < plru_size; j++){
-            printf("%d", index[i]->plru[j]);
+        check = false;
+
+        for (int a = 0; a < assoc; a++){
+            if (index[i]->ways[a]->mesi != INVALID){
+                check = true;
+            }
+
         }
+
+        if (check) {
+            printf("Set %d PLRU: ", i);
+            for (int j = 0; j < plru_size; j++){
+
+                printf("%d", index[i]->plru[j]);
+            }
+        
         printf("\n");
+        }
         for (int k = 0; k < assoc; k++) {
             if (index[i]->ways[k]->mesi != INVALID) {
                 printf("    Cache contents for Set %d way %d: MESI STATE %d, TAG: %4X\n", i, k, index[i]->ways[k]->mesi, index[i]->ways[k]->tag );
@@ -590,11 +604,11 @@ void cache_statistics(int operation, int CacheResult, bool finished_program){
         cache_misses++;
 
     // Check to see if read bus operation or read to modify
-    if (operation == READ || operation == RWIM) 
+    if (operation == READ_HD || operation == READ_HI) 
         cache_reads++;
 
     // Check to see if write bus operation
-    if (operation == WRITE) 
+    if (operation == WRITE_HD) 
         cache_writes++;
 
     return;
