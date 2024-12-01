@@ -25,6 +25,7 @@
 int mode = 0;       // Default mode for output is Silent
 uint32_t address;
 int operation;
+int old_mesi_state = INVALID; 
 char mesi_state[12] = "INVALID";
 char snoop_state[5] = "MISS";
 
@@ -218,10 +219,10 @@ int main(int argc, char *argv[]) {
                 if (CacheResult) {
                     if(mode){
                         printf("\nPrWr HIT @ 0x%08X, %s\n", address, mesi_state);
-                        if ( strcmp(mesi_state,"EXCLUSIVE") == 0 || strcmp(mesi_state,"MODIFIED") == 0 ){
+                        if ( old_mesi_state == EXCLUSIVE || old_mesi_state == MODIFIED ){
                             break;
                         }
-                        else if( strcmp(mesi_state,"SHARED") == 0 ){
+                        else if( old_mesi_state == SHARED ){
                             printf("BusUpgr @ 0x%08X\n", (address & ~(0x3F)));
                         }
                     }
@@ -346,6 +347,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         if (way->mesi != INVALID && way->tag == tag) {
             // Update PLRU to reflect MRU (Hit)
             UpdatePLRU(index[set_index]->plru, i);
+            old_mesi_state = (index[set_index]->ways[i]->mesi);
             MESI_set( &(index[set_index]->ways[i]->mesi), operation, 1);
             strcpy(mesi_state, (index[set_index]->ways[i]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[i]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[i]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[i]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
             #ifdef DEBUG
@@ -363,6 +365,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     if(InvalidWays >= 0) {
         Way *invalid_way =index[set_index]->ways[InvalidWays]; // Navigate to way in active set with an INVALID MESI state
         invalid_way->tag = tag; // Place new tag at current way
+        old_mesi_state = (index[set_index]->ways[InvalidWays]->mesi);
         MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), operation, 0); // Update MESI State based off snoop results
         strcpy(mesi_state, (index[set_index]->ways[InvalidWays]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[InvalidWays]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[InvalidWays]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[InvalidWays]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
         #ifdef DEBUG
@@ -375,6 +378,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         inclusive_print(INVALIDATELINE);
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
+        old_mesi_state = (index[set_index]->ways[victim_line]->mesi);
         MESI_set(&(victim_eviction->mesi), operation, 0); // Update MESI State based off snoop results
         strcpy(mesi_state, (index[set_index]->ways[victim_line]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[victim_line]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[victim_line]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[victim_line]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
         #ifdef DEBUG
