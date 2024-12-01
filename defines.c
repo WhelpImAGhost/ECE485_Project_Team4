@@ -1,6 +1,6 @@
 /* MESI Types */
 #define INVALID 0b00	/* Data is invalid */
-#define SHARED 0b01	/* Data is shared in other caches */
+#define SHARED 0b01	    /* Data is shared in other caches */
 #define EXCLUSIVE 0b10	/* This cache is exclusive owner */
 #define MODIFIED 0b11	/* This cache has a modified version of the data */
 
