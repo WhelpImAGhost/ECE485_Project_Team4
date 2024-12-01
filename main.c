@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Case 3\n");
                 #endif
                     if(mode){
-                        printf("\nBusRd @ 0x%08X, Snoop Result: %s sent\n", address, SendSnoopResult);
+                        //printf("\nBusRd @ 0x%08X, Snoop Result: %s sent\n", address, SendSnoopResult);
                     }
                 break;
 
@@ -390,12 +390,12 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     // Miss with a full set
     } else {
         int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways); // Decide which way is a the LRU
-        inclusive_print(INVALIDATELINE);
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
         old_mesi_state = (index[set_index]->ways[victim_line]->mesi);
         MESI_set(&(victim_eviction->mesi), operation, 0); // Update MESI State based off snoop results
         strcpy(mesi_state, (index[set_index]->ways[victim_line]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[victim_line]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[victim_line]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[victim_line]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
+        inclusive_print(INVALIDATELINE);
         #ifdef DEBUG
             fprintf(stderr, "MESI result: %s\n", mesi_state);
         #endif
