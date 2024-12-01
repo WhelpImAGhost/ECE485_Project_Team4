@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
                 }else {
                     if(mode){ 
                         printf("\nPrRd MISS @ 0x%08X\n", address);
-                        printf("BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F))), snoop_state, mesi_state; //TODO Snoop Result
+                        printf("BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
                         inclusive_print(SENDLINE); //Add Mesi Bit
                     }
                 }
@@ -259,6 +259,9 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 3\n");
                 #endif
+                    if(mode){
+                        printf("\nBusRd @ 0x%08X, Snoop Result: %s sent\n", address, SendSnoopResult);
+                    }
                 break;
 
                 
@@ -287,7 +290,13 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 8\n");
                 #endif
+                if(mode){
+                    printf("\n--------------------------------Clearing Cache Contents--------------------------------\n");
+                }
                 clear_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
+                if(mode){
+                    printf("\n---------------------------------------------------------------------------------------\n");
+                }
                 break;
 
 
@@ -295,7 +304,13 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 9\n");
                 #endif
+                if(mode){
+                    printf("\n--------------------------------Printing Cache Contents--------------------------------\n");
+                }                
                 print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
+                if(mode){
+                    printf("\n---------------------------------------------------------------------------------------\n");
+                }
                 break;
 
 
@@ -451,7 +466,7 @@ void SendSnoopResult(int* mesi){
     switch(*mesi) {
 
         case INVALID:
-            if(mode) printf("L2 result: MISS\n");
+            if(mode) printf("L2 result: NOHIT\n");
             break;
         case EXCLUSIVE:
             if(mode) printf("L2 result: HIT\n");
