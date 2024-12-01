@@ -37,7 +37,7 @@
 #define CACHE_SIZE 24		/* 2^(CACHE_SIZE) = True Capacity in Bytes */
 #define CACHE_LINE_SIZE 64	/* Number of bytes per line */
 #define ADDRESS_SIZE 32		/* Number of bits in address (no need to change) */
-#define ASSOCIATIVITY 16		/* Number of ways per set */
+#define ASSOCIATIVITY 16	/* Number of ways per set */
 
 /* Tag Array Sizes */
 #define TAG_ARRAY_MESI 2

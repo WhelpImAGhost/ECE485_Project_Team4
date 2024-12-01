@@ -25,6 +25,8 @@
 int mode = 0;       // Default mode for output is Silent
 uint32_t address;
 int operation;
+char mesi_state[12] = "INVALID";
+char snoop_state[5] = "MISS";
 
 /*#################### Global Type Definitions #######################*/
 typedef struct {
@@ -46,17 +48,19 @@ void UpdatePLRU(int PLRU[], int w );
 // Find LRU way in active set for eviction
 uint8_t VictimPLRU(int PLRU[], Way *way);
 // Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
-int GetSnoopResult(unsigned int address);
+int GetSnoopResult(char* snoop_state);
 // Determine if newest input address is a Hit or Miss, and act accordingly
-int hit_or_miss(Set *index[], int set_index, int tag);
+int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state);
 // Determine MESI state updates based upon Snoop Results
-void MESI_set(int* mesi, unsigned int address, int operation, int hm);
+void MESI_set(int* mesi, int operation, int hm);
 // Clear cache contents for Operation Code 8
 void clear_cache (Set *index[], int sets, int plru_size, int assoc);
 // Print cache contents for Operation Code 9
 void print_cache (Set *index[], int sets, int plru_size, int assoc);
 // Print the cache statistics for hits, misses, reads, writes, and ratios 
 void cache_statistics(int operation, int CacheResult, bool finished_program);
+// Print correct statements to simulate communication from this cache to higher cache level
+void inclusive_print(int state);
 
 int main(int argc, char *argv[]) {
 
@@ -67,6 +71,7 @@ int main(int argc, char *argv[]) {
     int cache_size = CACHE_SIZE;
     int tag, set_index, byte_select;
     int CacheResult;
+
 
     // Flags for setting non-default variable vvalues
 
@@ -111,7 +116,6 @@ int main(int argc, char *argv[]) {
     const int LINES = (TRUE_CAPACITY / CACHE_LINE_SIZE);
     const int SETS = (LINES / ASSOCIATIVITY);
 
-
     /* TAG ARRAY CALCULATIONS 
     Can be used for testing to verify that values can be changed correctly for modularity*/
     const int BYTE_SELECT_BITS = log2(CACHE_LINE_SIZE);
@@ -119,8 +123,6 @@ int main(int argc, char *argv[]) {
     const int TAG_BITS = ADDRESS_SIZE - (BYTE_SELECT_BITS + INDEX_BITS);
     const int PLRU_ARRAY_SIZE = (ASSOCIATIVITY - 1);
     const int TOTAL_TAG_ARRAY = (SETS * ((ASSOCIATIVITY * (TAG_BITS + TAG_ARRAY_MESI)) + PLRU_ARRAY_SIZE)) / 8; 	
-
-    
 
     #ifdef DEBUG
     fprintf(stderr,"Cache Capacity: %d bytes, # of Cache Lines: %d, # of Sets: %d\n",TRUE_CAPACITY,LINES,SETS);
@@ -173,8 +175,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-
-
     // Read each line until end of file
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
 
@@ -189,24 +189,33 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
         #endif
 
-
         switch (operation) {
 
-            case READ_HD:		    /* Read request from higher data cache */
+            case READ_HD:           /* Read request from higher data cache */
                 #ifdef DEBUG
                     fprintf(stderr, "Case 0\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag);
+                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 cache_statistics(operation, CacheResult, finished_program);
+                if (CacheResult) {
+                    if(mode){printf("PrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
+                    }
+                }else {
+                    if(mode){
+                        printf("PrRd MISS @ 0x%08X\n", address);
+                        printf("BusRd @ 0x%08X, Snoop Result:, MESI State: %s\n", (address & ~(0x3F)), mesi_state); //TODO Snoop Result
+                        inclusive_print(SENDLINE);
+                    }
+                }
                 break;
-
 
             case WRITE_HD:		    /* Write request from higher data cache */
                 #ifdef DEBUG
                     fprintf(stderr, "Case 1\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag);
+                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 cache_statistics(operation, CacheResult, finished_program);
+
                 break;
 
                 
@@ -214,8 +223,19 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 2\n");
                 #endif
-                CacheResult = hit_or_miss(index, set_index, tag);
+                CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 cache_statistics(operation, CacheResult, finished_program);
+
+                if (CacheResult) {
+                    if(mode){ printf("PrRd HIT @ 0x%08X, %s\n", address,mesi_state ); //TODO add MESI bits
+                    }
+                }else {
+                    if(mode){ 
+                        printf("PrRd MISS @ 0x%08X\n", address);
+                        printf("BusRd @ 0x%08X, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
+                        inclusive_print(SENDLINE); //Add Mesi Bit
+                    }
+                }
                 break;
 
 
@@ -268,35 +288,7 @@ int main(int argc, char *argv[]) {
                 exit(-1);
         }
 
-        #ifdef DEBUG
 
-            print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
-            clear_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
-            print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
-        #endif
-
-        /*
-        // Breakdown address into proper components for storage in the cache
-        extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
-        // Determine if Hit or Miss on CPU command
-        if (operation == READ_HD | operation == READ_HI | operation == WRITE_HD) {
-        // Call "hit_or_miss" to determine result
-        int CacheResult = hit_or_miss(index, set_index, tag);
-        // Print CacheResult
-        if (CacheResult) {
-         if(mode) printf("Hit!\n");
-        } else {
-        if (mode) printf("Miss!\n");
-        }} else {
-        // If Debug is Active, Display Operation and Address Components
-        #ifdef DEBUG
-        fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
-        fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
-        fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
-        fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
-        #endif
-        }
-        */
     }
     finished_program = true;
     cache_statistics(operation, CacheResult, finished_program);
@@ -322,7 +314,7 @@ void extract_address_components(unsigned int address, int *tag, int *set_index, 
 }
 
 // Determine if newest input address is a Hit or Miss, and act accordingly
-int hit_or_miss(Set *index[], int set_index, int tag){
+int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state){
     // Refresh InvalidWays for each function run
     int InvalidWays = -1;
     // Read through each way in the active set to determine if hit
@@ -338,7 +330,8 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         if (way->mesi != INVALID && way->tag == tag) {
             // Update PLRU to reflect MRU (Hit)
             UpdatePLRU(index[set_index]->plru, i);
-            MESI_set( &(index[set_index]->ways[i]->mesi), address, operation, 1);
+            MESI_set( &(index[set_index]->ways[i]->mesi), operation, 1);
+            strcpy(mesi_state, (way->mesi == INVALID) ? "INVALID" : ((way->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((way->mesi == SHARED) ? "SHARED" : ((way->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
             return 1; //Hit
         }
         //If not a hit, and there is an invalid way, mark the invalid way to be "filled" upon miss
@@ -351,14 +344,17 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     if(InvalidWays >= 0) {
         Way *invalid_way =index[set_index]->ways[InvalidWays]; // Navigate to way in active set with an INVALID MESI state
         invalid_way->tag = tag; // Place new tag at current way
-        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), address, operation, 0); // Update MESI State based off snoop results
+        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), operation, 0); // Update MESI State based off snoop results
+        strcpy(mesi_state, (invalid_way->mesi == INVALID) ? "INVALID" : ((invalid_way->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((invalid_way->mesi == SHARED) ? "SHARED" : ((invalid_way->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
         UpdatePLRU(index[set_index]->plru, InvalidWays); // Update PLRU for the newly entered way
     // Miss with a full set
     } else {
         int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways); // Decide which way is a the LRU
+        inclusive_print(INVALIDATELINE);
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
-        MESI_set(&(victim_eviction->mesi), address, operation, 0); // Update MESI State based off snoop results
+        MESI_set(&(victim_eviction->mesi), operation, 0); // Update MESI State based off snoop results
+        strcpy(mesi_state, (victim_eviction->mesi == INVALID) ? "INVALID" : ((victim_eviction->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((victim_eviction->mesi == SHARED) ? "SHARED" : ((victim_eviction->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
         UpdatePLRU(index[set_index]->plru, victim_line); // Update PLRU for the newly entered way
     }
     return 0; //Miss
@@ -411,16 +407,44 @@ uint8_t VictimPLRU(int PLRU[], Way *way){
 }
 
 // Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
-int GetSnoopResult(unsigned int address) {
+int GetSnoopResult(char* snoop_state) {
 // Mask 2LSB'f of address & return for use in MESI funtion
-    return address & 0x3;
+    int val = address & 0x3;
+    
+    strcpy(snoop_state, (val == HIT ? "HIT" : (val == HITM ? "HITM" : "MISS")));
+    
+    return val;
+
+}
+
+void SendSnoopResult(int* mesi){
+
+    switch(*mesi) {
+
+        case INVALID:
+            if(mode) printf("L2 result: MISS\n");
+            break;
+        case EXCLUSIVE:
+            if(mode) printf("L2 result: HIT\n");
+            break;
+        case SHARED:
+            if(mode) printf("L2 result: HIT\n");
+            break;
+        case MODIFIED:
+            if(mode) printf("L2 result: HITM\n");
+            break;
+        default:
+            fprintf(stderr, "Invalid MESI state\n");
+            exit(-1);
+
+    }
 
 }
 
 // Determine MESI state updates based upon Snoop Results
-void MESI_set(int* mesi, unsigned int address, int operation, int hm){
+void MESI_set(int* mesi, int operation, int hm){
 
-    int snoop = GetSnoopResult(address);
+    int snoop = GetSnoopResult(snoop_state);
 
 
     switch (operation){
@@ -434,20 +458,15 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm){
 
             if(hm) break;
 
-            if (mode) printf("Performing a BusRead Operation\n");
             if (snoop == HIT){
-
-                if (mode) printf("Snoop Result was HIT, reading from DRAM, moving to Shared\n");
                 *mesi = SHARED;
             }
             else if (snoop == HITM && operation != 1) {
 
-                if (mode) printf("Snoop Result was HITM, waiting for writeback, reading from DRAM, then moving to Shared\n");
                 *mesi = SHARED;
             }
             else{
 
-                if (mode) printf("Snoop Result was MISS, reading from DRAM, moving to Exclusive\n");
                 *mesi = EXCLUSIVE;
             }
             #ifdef DEBUG
@@ -457,19 +476,16 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm){
             break;
         case WRITE_HD: // n = 1
             if (*mesi == INVALID) { 
-                if (mode) printf("Performing a BusRdX Operation for address 0x%8X, moving to Modified\n", address);
                 *mesi = MODIFIED;
             } 
             else if (*mesi == SHARED) { 
-                if (mode) printf("Performing a BusUpgr Operation for address 0x%8X, moving to Modified\n", address);
                 *mesi = MODIFIED;
             }
             else if (*mesi == EXCLUSIVE) { 
-                if (mode) printf("No Bus Operation, moving to Modified\n");
                 *mesi = MODIFIED;
             }
             else {
-                if (mode) printf("No Bus Operation, already in Modified\n");
+                *mesi = MODIFIED;
 
             }
             
@@ -477,45 +493,23 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm){
         case READ_S: // n = 3
 
             if (*mesi == EXCLUSIVE) {
-                if (mode) printf("Snooped a BusRd Operation for address 0x%8X while I am Exclusive, moving to Shared\n", address);
-                if (mode) printf("Echoing a HIT for address 0x%8X\n", address);
                 *mesi = SHARED;
             }
             else if (*mesi == MODIFIED) {
-                if (mode) printf("Snooped a BusRd Operation for address 0x%8X while I have it Modified, flushing contents to DRAM and moving to Shared\n", address);
-                if (mode) printf("Echoing a HITM for address 0x%8X\n", address);
                 *mesi = SHARED;
             }
             else if (*mesi == SHARED) { 
-                if (mode) printf("Snooped a BusRd Operation for address 0x%8X while I have it Shared, no changes here\n", address); 
-                if (mode) printf("Echoing a HIT for address 0x%8X\n", address);
                 }
-            else{ 
-                if(mode) printf("Snooped a BusRd Operation for address 0x%8X while I have it Invalid, no changes here\n", address);
-                if(mode) printf("Echoing a MISS for address 0x%8X\n", address);
-            }
-        
+
         case RWIM_S: // n = 5
-            if (*mesi == MODIFIED) { if (mode) printf("Snooped a BusRdX Operation for address 0x%8X while I have it Modified, flushing contents to DRAM and Invalidating \n", address); }
-            else if (*mesi == EXCLUSIVE) { if (mode) printf("Snooped a BusRdX Operation for address 0x%8X while I have it Exclusive, Invalidating \n", address); }
-            else if (*mesi == SHARED) { fprintf(stderr, "0x%8X Address shared and gathered RWIM. Not a valid state.\n", address); }
-            else {  if(mode) printf("Snooped a BusRdX for address 0x%8X while I have it Invalid, no changes here\n", address); }
             *mesi = INVALID;
             break;
 
         case WRITE_S: // n = 4
-            if (*mesi == MODIFIED) { if (mode) printf("Snooped a Write Request for address 0x%8X while I have it Modified, flushing contents to DRAM and Invalidating \n", address); }
-            else if (*mesi == EXCLUSIVE) { if (mode) printf("Snooped a Write Request for address 0x%8X while I have it Exclusive, Invalidating \n", address); }
-            else if (*mesi == SHARED) { if (mode) printf("Snooped a Write Request for address 0x%8X while I have it shared, Invalidating\n", address); }
-            else {  if(mode) printf("Snooped a Write Request for address 0x%8X while I have it Invalid, no changes here\n", address); }
             *mesi = INVALID;
             break;
 
         case INVALIDATE_S: // n = 6
-            if (*mesi == MODIFIED) { if (mode) fprintf(stderr, "0x%8X Address Modified and gathered Invalidate. Not a valid state.\n", address); }
-            else if (*mesi == EXCLUSIVE) { if (mode) fprintf(stderr, "0x%8X Address Exclusive and gathered Invalidate. Not a valid state.\n", address); }
-            else if (*mesi == SHARED) { if (mode) printf("Snooped BusUpgr Operation for address 0x%8X while I have it shared, Invalidating\n", address); }
-            else {  if(mode) printf("Snooped a BusUpgr Operation for address 0x%8X while I have it Invalid, no changes here\n", address); }
             *mesi = INVALID;
             break;
 
@@ -524,7 +518,6 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm){
             exit(-1);
     }
 
-        
     return;
 
 }
@@ -594,6 +587,30 @@ void cache_statistics(int operation, int CacheResult, bool finished_program){
     // Check to see if write bus operation
     if (operation == WRITE) 
         cache_writes++;
+
+    return;
+}
+
+void inclusive_print(int state){
+
+    switch(state) {
+
+        case GETLINE:
+            if(mode) printf("L2: GETLINE 0x%08X\n", address);
+            break;
+        case SENDLINE:
+            if(mode) printf("L2: SENDLINE 0x%08X\n", address);
+            break;
+        case INVALIDATELINE:
+            if(mode) printf("L2: INVALIDATELINE 0x%08X\n", address);
+            break;
+        case EVICTLINE:
+            if(mode) printf("L2: EVICTLINE 0x%08X\n", address);
+            break;
+        default:
+            fprintf(stderr, "Invalid state in inclusive_print function\n");
+            exit(-1);
+    }
 
     return;
 }
