@@ -476,17 +476,16 @@ int GetSnoopResult(char* snoop_state) {
 }
 
 int SnoopChecker(Set *index[], int set_index, int tag) {
-
-    // Iterate through each way in the set
+    
     for (int i = 0; i < ASSOCIATIVITY; i++) {
         Way *way = index[set_index]->ways[i];
-
         // Check for a valid MESI state and matching tag
         if (way->mesi != INVALID && way->tag == tag) {
-            MESI_set(&(index[set_index]->ways[tag]->mesi), operation, 0);
             if (way->mesi == MODIFIED) {
+                MESI_set(&(index[set_index]->ways[i]->mesi), operation, 1);
                 return HITM; // Hit in Modified state
             } else if (way->mesi == EXCLUSIVE || way->mesi == SHARED) {
+                MESI_set(&(index[set_index]->ways[i]->mesi), operation, 1);
                 return HIT; // Hit in Exclusive or Shared state
             }
         }
@@ -541,6 +540,9 @@ void MESI_set(int* mesi, int operation, int hm){
                 *mesi = SHARED;
             }
             else if (*mesi == MODIFIED) {
+                *mesi = SHARED;
+            }
+            else if (*mesi == SHARED) {
                 *mesi = SHARED;
             }
 
