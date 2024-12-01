@@ -215,6 +215,23 @@ int main(int argc, char *argv[]) {
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
                 cache_statistics(operation, CacheResult, finished_program);
+                if (CacheResult) {
+                    if(mode){
+                        printf("PrWr HIT @ 0x%08X, %s\n", address, mesi_state); //TODO add MESI bits
+                        if (mesi_state == "EXCLUSIVE" || mesi_state == "MODIFIED"){
+                            break;
+                        }
+                        else if(mesi_state == "SHARED"){
+                            printf("BusUpgr @ 0x%08X\n", (address & ~(0x3F)));
+                        }
+                    }
+                }else {
+                        if(mode){
+                            printf("PrWr MISS @ 0x%08X\n", address);
+                            printf("BusRdx @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
+                            inclusive_print(SENDLINE);
+                        }
+                }
                 break;
 
                 
