@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
     int cache_size = CACHE_SIZE;
     int tag, set_index, byte_select;
     int CacheResult;
+    int SnoopReply;
 
 
     // Flags for setting non-default variable vvalues
@@ -264,9 +265,16 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 3\n");
                 #endif
-                SnoopChecker(index, set_index, tag);
+                SnoopReply = SnoopChecker(index, set_index, tag);
+                SendSnoopResult(SnoopReply, snoop_reply);
                     if(mode){
-                        printf("\nBusRd @ 0x%08X, L2 Snoop Result: %s sent\n", address, snoop_reply);
+                        printf("\nBusRd @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
+                        if(strcmp(snoop_reply,"HITM")==0){
+                            inclusive_print(GETLINE);
+                            printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
+                        } else if( (strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
+                            printf("L2 MESI State: %s", mesi_state);
+                        }
                     }
                 break;
 
@@ -468,16 +476,18 @@ int GetSnoopResult(char* snoop_state) {
 }
 
 int SnoopChecker(Set *index[], int set_index, int tag) {
-
-    // Iterate through each way in the set
+    
     for (int i = 0; i < ASSOCIATIVITY; i++) {
         Way *way = index[set_index]->ways[i];
-
         // Check for a valid MESI state and matching tag
         if (way->mesi != INVALID && way->tag == tag) {
             if (way->mesi == MODIFIED) {
+                MESI_set(&(index[set_index]->ways[i]->mesi), operation, 1);
+                strcpy(mesi_state, (index[set_index]->ways[i]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[i]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[i]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[i]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
                 return HITM; // Hit in Modified state
             } else if (way->mesi == EXCLUSIVE || way->mesi == SHARED) {
+                MESI_set(&(index[set_index]->ways[i]->mesi), operation, 1);
+                strcpy(mesi_state, (index[set_index]->ways[i]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[i]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[i]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[i]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
                 return HIT; // Hit in Exclusive or Shared state
             }
         }
@@ -532,6 +542,9 @@ void MESI_set(int* mesi, int operation, int hm){
                 *mesi = SHARED;
             }
             else if (*mesi == MODIFIED) {
+                *mesi = SHARED;
+            }
+            else if (*mesi == SHARED) {
                 *mesi = SHARED;
             }
 
