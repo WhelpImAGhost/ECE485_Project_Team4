@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
                 }else {
                     if(mode){
                         printf("\nPrRd MISS @ 0x%08X\n", address);
-                        printf("BusRd @ 0x%08X, Snoop Result:, MESI State: %s\n", (address & ~(0x3F)), mesi_state); //TODO Snoop Result
+                        printf("BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
                         inclusive_print(SENDLINE);
                     }
                 }
@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
                 }else {
                     if(mode){ 
                         printf("\nPrRd MISS @ 0x%08X\n", address);
-                        printf("BusRd @ 0x%08X, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
+                        printf("BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F))), snoop_state, mesi_state; //TODO Snoop Result
                         inclusive_print(SENDLINE); //Add Mesi Bit
                     }
                 }
@@ -436,7 +436,7 @@ int GetSnoopResult(char* snoop_state) {
 // Mask 2LSB'f of address & return for use in MESI funtion
     int val = address & 0x3;
     
-    strcpy(snoop_state, (val == HIT ? "HIT" : (val == HITM ? "HITM" : "MISS")));
+    strcpy(snoop_state, (val == HIT ? "HIT" : (val == HITM ? "HITM" : "NOHIT")));
     
     return val;
 
@@ -574,7 +574,7 @@ void cache_statistics(int operation, int CacheResult, bool finished_program){
     // Needs to stay up here since "operation" will remain and will count last one twice if not
     if (finished_program) {
         cache_hit_miss_ratio = (cache_hits + cache_misses > 0) ? (float)cache_hits / (cache_hits + cache_misses) : 0.0;
-        printf("Reads: %d, Writes: %d, Cache hits: %d, Cache misses: %d, Cache hit ratio: %.5f\n", 
+        printf("\n--------------------------------Cache Results--------------------------------\nReads: %d, Writes: %d, Cache hits: %d, Cache misses: %d, Cache hit ratio: %.5f\n-----------------------------------------------------------------------------\n", 
             cache_reads, cache_writes, cache_hits, cache_misses, cache_hit_miss_ratio);
         return;
     }
@@ -601,16 +601,16 @@ void inclusive_print(int state){
     switch(state) {
 
         case GETLINE:
-            if(mode) printf("L2: GETLINE 0x%08X\n", address);
+            if(mode) printf("L2: GETLINE 0x%08X\n", (address & ~(0x3F)));
             break;
         case SENDLINE:
-            if(mode) printf("L2: SENDLINE 0x%08X\n", address);
+            if(mode) printf("L2: SENDLINE 0x%08X\n", (address & ~(0x3F)));
             break;
         case INVALIDATELINE:
-            if(mode) printf("L2: INVALIDATELINE 0x%08X\n", address);
+            if(mode) printf("L2: INVALIDATELINE 0x%08X\n", (address & ~(0x3F)));
             break;
         case EVICTLINE:
-            if(mode) printf("L2: EVICTLINE 0x%08X\n", address);
+            if(mode) printf("L2: EVICTLINE 0x%08X\n", (address & ~(0x3F)));
             break;
         default:
             fprintf(stderr, "Invalid state in inclusive_print function\n");
