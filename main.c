@@ -194,12 +194,12 @@ int main(int argc, char *argv[]) {
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
                 if (CacheResult) {
-                    if(mode){ printf("PrRd HIT @ 0x%8d: \n", address); //TODO add MESI bits
+                    if(mode){ printf("PrRd HIT @ 0x%08X \n", address); //TODO add MESI bits
                     }
                 }else {
                     if(mode){ 
-                        printf("PrRd MISS @ 0x%8d\n", address);
-                        printf("BusRd @ 0x%8d, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
+                        printf("PrRd MISS @ 0x%08X\n", address);
+                        printf("BusRd @ 0x%08X, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
                         inclusive_print(0x1,address); //Add Mesi Bit
                     }
                 }
@@ -518,16 +518,16 @@ void inclusive_print(int state, unsigned int address){
     switch(state) {
 
         case GETLINE:
-            if(mode) printf("L2: GETLINE 0x%8X\n", address);
+            if(mode) printf("L2: GETLINE 0x%08X\n", address);
             break;
         case SENDLINE:
-            if(mode) printf("L2: SENDLINE 0x%8X\n", address);
+            if(mode) printf("L2: SENDLINE 0x%08X\n", address);
             break;
         case INVALIDATELINE:
-            if(mode) printf("L2: INVALIDATELINE 0x%8X\n", address);
+            if(mode) printf("L2: INVALIDATELINE 0x%08X\n", address);
             break;
         case EVICTLINE:
-            if(mode) printf("L2: EVICTLINE 0x%8X\n", address);
+            if(mode) printf("L2: EVICTLINE 0x%08X\n", address);
             break;
         default:
             fprintf(stderr, "Invalid state in inclusive_print function\n");
