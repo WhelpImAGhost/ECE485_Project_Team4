@@ -561,6 +561,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
     return;
 }
 
+//This gives the overall statistics of the cache including the ratio after the program finishes
 void cache_statistics(int operation, int CacheResult, bool finished_program){
 
     static int cache_reads = 0;
@@ -573,7 +574,7 @@ void cache_statistics(int operation, int CacheResult, bool finished_program){
     // Needs to stay up here since "operation" will remain and will count last one twice if not
     if (finished_program) {
         cache_hit_miss_ratio = (cache_hits + cache_misses > 0) ? (float)cache_hits / (cache_hits + cache_misses) : 0.0;
-        printf("Reads: %d, Writes: %d, Cache hits: %d, Cache misses: %d, Cache hit ratio: %.2f\n", 
+        printf("Reads: %d, Writes: %d, Cache hits: %d, Cache misses: %d, Cache hit ratio: %.5f\n", 
             cache_reads, cache_writes, cache_hits, cache_misses, cache_hit_miss_ratio);
         return;
     }
