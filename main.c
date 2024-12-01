@@ -28,6 +28,7 @@ int operation;
 int old_mesi_state = INVALID; 
 char mesi_state[12] = "INVALID";
 char snoop_state[5] = "MISS";
+char snoop_reply[5] = "NOHIT";
 
 /*#################### Global Type Definitions #######################*/
 typedef struct {
@@ -50,6 +51,10 @@ void UpdatePLRU(int PLRU[], int w );
 uint8_t VictimPLRU(int PLRU[], Way *way);
 // Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
 int GetSnoopResult(char* snoop_state);
+// Determine if newest input address is a Hit or Miss, and act accordingly
+int SnoopChecker(Set *index[], int set_index, int tag);
+// Produce L2 Cache snoop result based on MESI bits of active way
+void SendSnoopResult(int SnoopCheck, char* snoop_reply);
 // Determine if newest input address is a Hit or Miss, and act accordingly
 int hit_or_miss(Set *index[], int set_index, int tag);
 // Determine MESI state updates based upon Snoop Results
@@ -259,9 +264,15 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 3\n");
                 #endif
+                SnoopChecker(index, set_index, tag);
                     if(mode){
+<<<<<<< Updated upstream
                         //printf("\nBusRd @ 0x%08X, Snoop Result: %s sent\n", address, SendSnoopResult);
                     }
+=======
+                        printf("\nBusRd @ 0x%08X, L2 Snoop Result: %s \n", address, snoop_reply);
+                        }
+>>>>>>> Stashed changes
                 break;
 
                 
@@ -461,28 +472,33 @@ int GetSnoopResult(char* snoop_state) {
 
 }
 
-void SendSnoopResult(int* mesi){
+int SnoopChecker(Set *index[], int set_index, int tag) {
 
-    switch(*mesi) {
+    // Iterate through each way in the set
+    for (int i = 0; i < ASSOCIATIVITY; i++) {
+        Way *way = index[set_index]->ways[i];
 
-        case INVALID:
-            if(mode) printf("L2 result: NOHIT\n");
-            break;
-        case EXCLUSIVE:
-            if(mode) printf("L2 result: HIT\n");
-            break;
-        case SHARED:
-            if(mode) printf("L2 result: HIT\n");
-            break;
-        case MODIFIED:
-            if(mode) printf("L2 result: HITM\n");
-            break;
-        default:
-            fprintf(stderr, "Invalid MESI state\n");
-            exit(-1);
-
+        // Check for a valid MESI state and matching tag
+        if (way->mesi != INVALID && way->tag == tag) {
+            if (way->mesi == MODIFIED) {
+                return HITM; // Hit in Modified state
+            } else if (way->mesi == EXCLUSIVE || way->mesi == SHARED) {
+                return HIT; // Hit in Exclusive or Shared state
+            }
+        }
     }
 
+    // No hit found
+    return NOHIT1;
+}
+
+void SendSnoopResult(int SnoopCheck, char* snoop_reply) {
+    if (snoop_reply != NULL) {
+        // Ensure the reply matches the snoop result
+        strcpy(snoop_reply, 
+               (SnoopCheck == HITM ? "HITM" : 
+               (SnoopCheck == HIT ? "HIT" : "NOHIT")));
+    }
 }
 
 // Determine MESI state updates based upon Snoop Results
@@ -556,6 +572,9 @@ void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
         for (int k = 0; k < assoc; k++) {
             index[i]->ways[k]->mesi = INVALID;
             index[i]->ways[k]->tag = 0;
+            if(index[i]->ways[k]->mesi != 0x0){
+                inclusive_print(INVALIDATELINE);
+            }
         }
     }
     return;
