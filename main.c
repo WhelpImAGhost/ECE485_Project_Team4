@@ -24,6 +24,8 @@
 int mode = 0;       // Default mode for output is Silent
 uint32_t address;
 int operation;
+char mesi_state[12] = "INVALID";
+char snoop_state[5] = "MISS";
 
 /*#################### Global Type Definitions #######################*/
 typedef struct {
@@ -45,7 +47,7 @@ void UpdatePLRU(int PLRU[], int w );
 // Find LRU way in active set for eviction
 uint8_t VictimPLRU(int PLRU[], Way *way);
 // Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
-int GetSnoopResult(unsigned int address);
+int GetSnoopResult(char* snoop_state);
 // Determine if newest input address is a Hit or Miss, and act accordingly
 int hit_or_miss(Set *index[], int set_index, int tag, char* mesi_state);
 // Determine MESI state updates based upon Snoop Results
@@ -66,7 +68,7 @@ int main(int argc, char *argv[]) {
     int cache_size = CACHE_SIZE;
     int tag, set_index, byte_select;
     int CacheResult;
-    char mesi_state[12] = "INVALID";
+
 
     // Flags for setting non-default variable vvalues
 
@@ -222,7 +224,7 @@ int main(int argc, char *argv[]) {
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag, mesi_state);
                 if (CacheResult) {
-                    if(mode){ printf("PrRd HIT @ 0x%08X, %c\n", address,mesi_state ); //TODO add MESI bits
+                    if(mode){ printf("PrRd HIT @ 0x%08X, %s\n", address,mesi_state ); //TODO add MESI bits
                     }
                 }else {
                     if(mode){ 
@@ -400,9 +402,13 @@ uint8_t VictimPLRU(int PLRU[], Way *way){
 }
 
 // Extract 2 LSB's of address to determine HIT, HITM, or NOTHIT
-int GetSnoopResult(unsigned int address) {
+int GetSnoopResult(char* snoop_state) {
 // Mask 2LSB'f of address & return for use in MESI funtion
-    return address & 0x3;
+    int val = address & 0x3;
+    
+    strcpy(snoop_state, (val == HIT ? "HIT" : (val == HITM ? "HITM" : "MISS")));
+    
+    return val;
 
 }
 
@@ -433,7 +439,7 @@ void SendSnoopResult(int* mesi){
 // Determine MESI state updates based upon Snoop Results
 void MESI_set(int* mesi, int operation, int hm){
 
-    int snoop = GetSnoopResult(address);
+    int snoop = GetSnoopResult(snoop_state);
 
 
     switch (operation){
