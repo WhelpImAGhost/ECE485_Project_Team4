@@ -10,3 +10,4 @@
 !defines.c
 !OperationTest.din
 !cache_stats.din
+!Test_Cache_Stats.sh

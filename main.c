@@ -635,7 +635,7 @@ void cache_statistics(int operation, int CacheResult, bool finished_program){
     // Needs to stay up here since "operation" will remain and will count last one twice if not
     if (finished_program) {
         cache_hit_miss_ratio = (cache_hits + cache_misses > 0) ? (float)cache_hits / (cache_hits + cache_misses) : 0.0;
-        printf("\n--------------------------------Cache Results--------------------------------\nReads: %d, Writes: %d, Cache hits: %d, Cache misses: %d, Cache hit ratio: %.5f\n-----------------------------------------------------------------------------\n", 
+        printf("\n----------------------------------------Cache Results----------------------------------------\nOverall Reads: %d, Overall Writes: %d, Cache hits: %d, Cache misses: %d, Cache hit ratio: %.5f\n---------------------------------------------------------------------------------------------\n", 
             cache_reads, cache_writes, cache_hits, cache_misses, cache_hit_miss_ratio);
         return;
     }
