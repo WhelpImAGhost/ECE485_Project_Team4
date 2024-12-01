@@ -266,7 +266,7 @@ int main(int argc, char *argv[]) {
                 #endif
                 SnoopChecker(index, set_index, tag);
                     if(mode){
-                        //printf("\nBusRd @ 0x%08X, Snoop Result: %s sent\n", address, SendSnoopResult);
+                        printf("\nBusRd @ 0x%08X, L2 Snoop Result: %s sent\n", address, snoop_reply);
                     }
                 break;
 
