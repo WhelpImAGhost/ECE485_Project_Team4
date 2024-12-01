@@ -494,6 +494,7 @@ void SendSnoopResult(int SnoopCheck, char* snoop_reply) {
                (SnoopCheck == HITM ? "HITM" : 
                (SnoopCheck == HIT ? "HIT" : "NOHIT")));
     }
+    return;
 }
 
 // Determine MESI state updates based upon Snoop Results
