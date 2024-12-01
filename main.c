@@ -194,13 +194,13 @@ int main(int argc, char *argv[]) {
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
                 if (CacheResult) {
-                    if(mode){ printf("PrRd HIT @ 0x%08X \n", address); //TODO add MESI bits
+                    if(mode){ printf("PrRd HIT @ 0x%08X, %c\n", address, ); //TODO add MESI bits
                     }
                 }else {
                     if(mode){ 
                         printf("PrRd MISS @ 0x%08X\n", address);
                         printf("BusRd @ 0x%08X, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
-                        inclusive_print(0x1,address); //Add Mesi Bit
+                        inclusive_print(SENDLINE,address); //Add Mesi Bit
                     }
                 }
                 break;
@@ -335,6 +335,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     // Miss with a full set
     } else {
         int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways); // Decide which way is a the LRU
+        inclusive_print(INVALIDATELINE, address);
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
         MESI_set(&(victim_eviction->mesi), address, operation, 0); // Update MESI State based off snoop results
