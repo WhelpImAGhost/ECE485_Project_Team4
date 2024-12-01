@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
                     }
                 }else {
                     if(mode){
-                        printf("PrRd0 MISS @ 0x%08X\n", address);
+                        printf("PrRd MISS @ 0x%08X\n", address);
                         printf("BusRd @ 0x%08X, Snoop Result:, MESI State: %s\n", (address & ~(0x3F)), mesi_state); //TODO Snoop Result
                         inclusive_print(SENDLINE);
                     }
