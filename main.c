@@ -191,6 +191,10 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Case 0\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
+                if (mode && CacheResult) {
+                    printf("PrRd HIT @ %d", address);
+                //  printf()
+                }
                 break;
 
 
@@ -266,28 +270,6 @@ int main(int argc, char *argv[]) {
             print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
         #endif
 
-        /*
-        // Breakdown address into proper components for storage in the cache
-        extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
-        // Determine if Hit or Miss on CPU command
-        if (operation == READ_HD | operation == READ_HI | operation == WRITE_HD) {
-        // Call "hit_or_miss" to determine result
-        int CacheResult = hit_or_miss(index, set_index, tag);
-        // Print CacheResult
-        if (CacheResult) {
-         if(mode) printf("Hit!\n");
-        } else {
-        if (mode) printf("Miss!\n");
-        }} else {
-        // If Debug is Active, Display Operation and Address Components
-        #ifdef DEBUG
-        fprintf(stderr, "Operation: %d, Address: 0x%X\n", operation, address);
-        fprintf(stderr, "Extracted Tag: 0x%X\n", tag);
-        fprintf(stderr, "Extracted Index: 0x%X\n", set_index);
-        fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
-        #endif
-        }
-        */
     }
     fclose(file);  // Close the file
 
@@ -407,7 +389,7 @@ int GetSnoopResult(unsigned int address) {
 }
 
 // Determine MESI state updates based upon Snoop Results
-void MESI_set(int* mesi, unsigned int address, int operation, int hm){
+/*void MESI_set(int* mesi, unsigned int address, int operation, int hm){
 
     int snoop = GetSnoopResult(address);
 
@@ -516,7 +498,7 @@ void MESI_set(int* mesi, unsigned int address, int operation, int hm){
         
     return;
 
-}
+}*/
 
 void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
 
