@@ -193,9 +193,12 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Case 0\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
-                if (mode && CacheResult) {
-                    printf("PrRd HIT @ %d", address);
-                //  printf()
+                if (CacheResult) {
+                    if(mode) printf("PrRd, HIT @ %d\n", address);
+                    //Inclusivity Statement
+                }else {
+                    //
+                    if(mode) printf("PrRd MISS @ %d, BusRd \n", address);
                 }
                 break;
 
