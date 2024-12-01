@@ -49,13 +49,13 @@ int GetSnoopResult(unsigned int address);
 // Determine if newest input address is a Hit or Miss, and act accordingly
 int hit_or_miss(Set *index[], int set_index, int tag);
 // Determine MESI state updates based upon Snoop Results
-void MESI_set(int* mesi, unsigned int address, int operation, int hm);
+void MESI_set(int* mesi, int operation, int hm);
 // Clear cache contents for Operation Code 8
 void clear_cache (Set *index[], int sets, int plru_size, int assoc);
 // Print cache contents for Operation Code 9
 void print_cache (Set *index[], int sets, int plru_size, int assoc);
 // Print correct statements to simulate communication from this cache to higher cache level
-void inclusive_print(int state, unsigned int address);
+void inclusive_print(int state);
 
 int main(int argc, char *argv[]) {
 
@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
                     if(mode){ 
                         printf("PrRd MISS @ 0x%08X\n", address);
                         printf("BusRd @ 0x%08X, Snoop Result:\n", (address & ~(0x3F))); //TODO Snoop Result
-                        inclusive_print(SENDLINE,address); //Add Mesi Bit
+                        inclusive_print(SENDLINE); //Add Mesi Bit
                     }
                 }
                 break;
@@ -317,7 +317,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         if (way->mesi != INVALID && way->tag == tag) {
             // Update PLRU to reflect MRU (Hit)
             UpdatePLRU(index[set_index]->plru, i);
-            MESI_set( &(index[set_index]->ways[i]->mesi), address, operation, 1);
+            MESI_set( &(index[set_index]->ways[i]->mesi), operation, 1);
             return 1; //Hit
         }
         //If not a hit, and there is an invalid way, mark the invalid way to be "filled" upon miss
@@ -330,15 +330,15 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     if(InvalidWays >= 0) {
         Way *invalid_way =index[set_index]->ways[InvalidWays]; // Navigate to way in active set with an INVALID MESI state
         invalid_way->tag = tag; // Place new tag at current way
-        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), address, operation, 0); // Update MESI State based off snoop results
+        MESI_set(&(index[set_index]->ways[InvalidWays]->mesi), operation, 0); // Update MESI State based off snoop results
         UpdatePLRU(index[set_index]->plru, InvalidWays); // Update PLRU for the newly entered way
     // Miss with a full set
     } else {
         int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways); // Decide which way is a the LRU
-        inclusive_print(INVALIDATELINE, address);
+        inclusive_print(INVALIDATELINE);
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
-        MESI_set(&(victim_eviction->mesi), address, operation, 0); // Update MESI State based off snoop results
+        MESI_set(&(victim_eviction->mesi), operation, 0); // Update MESI State based off snoop results
         UpdatePLRU(index[set_index]->plru, victim_line); // Update PLRU for the newly entered way
     }
     return 0; //Miss
@@ -397,8 +397,32 @@ int GetSnoopResult(unsigned int address) {
 
 }
 
+void SendSnoopResult(int* mesi){
+
+    switch(*mesi) {
+
+        case INVALID:
+            if(mode) printf("L2 result: MISS\n");
+            break;
+        case EXCLUSIVE:
+            if(mode) printf("L2 result: HIT\n");
+            break;
+        case SHARED:
+            if(mode) printf("L2 result: HIT\n");
+            break;
+        case MODIFIED:
+            if(mode) printf("L2 result: HITM\n");
+            break;
+        default:
+            fprintf(stderr, "Invalid MESI state\n");
+            exit(-1);
+
+    }
+
+}
+
 // Determine MESI state updates based upon Snoop Results
-void MESI_set(int* mesi, unsigned int address, int operation, int hm){
+void MESI_set(int* mesi, int operation, int hm){
 
     int snoop = GetSnoopResult(address);
 
@@ -514,7 +538,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
 }
 
 
-void inclusive_print(int state, unsigned int address){
+void inclusive_print(int state){
 
     switch(state) {
 
