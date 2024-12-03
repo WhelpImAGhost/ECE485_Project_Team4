@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
                 }else {
                     if(mode){
                         printf("\nPrRd MISS @ 0x%08X\n", address);
-                        printf("BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                        printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
                         inclusive_print(SENDLINE);
                     }
                 }
@@ -229,13 +229,13 @@ int main(int argc, char *argv[]) {
                             break;
                         }
                         else if( old_mesi_state == SHARED ){
-                            printf("BusUpgr @ 0x%08X\n", (address & ~(0x3F)));
+                            printf("L2: BusUpgr @ 0x%08X\n", (address & ~(0x3F)));
                         }
                     }
                 }else {
                         if(mode){
                             printf("\nPrWr MISS @ 0x%08X\n", address);
-                            printf("BusRdx @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
+                            printf("L2: BusRdx @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
                             inclusive_print(SENDLINE);
                         }
                 }
@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
                 }else {
                     if(mode){ 
                         printf("\nPrRd MISS @ 0x%08X\n", address);
-                        printf("BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                        printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
                         inclusive_print(SENDLINE); //Add Mesi Bit
                     }
                 }
@@ -268,10 +268,10 @@ int main(int argc, char *argv[]) {
                 SnoopReply = SnoopChecker(index, set_index, tag);
                 SendSnoopResult(SnoopReply, snoop_reply);
                     if(mode){
-                        printf("\nBusRd @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
+                        printf("\nSnooped Operation: BusRd @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
                         if(strcmp(snoop_reply,"HITM")==0){
                             inclusive_print(GETLINE);
-                            printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
+                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
                         } else if( (strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
                             printf("L2 MESI State: %s\n", mesi_state);
                         }
