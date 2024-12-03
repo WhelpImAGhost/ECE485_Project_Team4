@@ -310,10 +310,10 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 6\n");
 
+                #endif
                 if(mode) printf("InvalidateLine @ 0x%08X\n", address);
                 SnoopReply = SnoopChecker(index, set_index, tag);
                 SendSnoopResult(SnoopReply, snoop_reply);
-                #endif
                 break;
 
 
