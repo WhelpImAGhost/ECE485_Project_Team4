@@ -27,7 +27,7 @@ uint32_t address;
 int operation;
 int old_mesi_state = INVALID; 
 char mesi_state[12] = "INVALID";
-char snoop_state[5] = "MISS";
+char snoop_state[5] = "NOHIT";
 char snoop_reply[5] = "NOHIT";
 
 /*#################### Global Type Definitions #######################*/
