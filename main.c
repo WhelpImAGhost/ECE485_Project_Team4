@@ -428,7 +428,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         if(mode){
             if (old_mesi_state == MODIFIED){
                 inclusive_print(EVICTLINE);
-                printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, old_mesi_state);
+                printf("FlushWB @ 0x%08X, L2 MESI State: INVALID\n", address);
             } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
                 inclusive_print(INVALIDATELINE);
             }
