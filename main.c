@@ -300,7 +300,7 @@ int main(int argc, char *argv[]) {
                             printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
                         } else if(strcmp(snoop_reply,"HIT")==0){
                             inclusive_print(INVALIDATELINE);
-                            printf("L2 MESI State: %s", mesi_state);
+                            printf("L2 MESI State: %s\n", mesi_state);
                         }
                     }
                 break;
@@ -311,9 +311,15 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Case 6\n");
 
                 #endif
-                if(mode) printf("InvalidateLine @ 0x%08X\n", address);
                 SnoopReply = SnoopChecker(index, set_index, tag);
                 SendSnoopResult(SnoopReply, snoop_reply);
+                    if(mode){
+                        printf("\nBusUpgr @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
+                        if(strcmp(snoop_reply,"HIT")==0){
+                            inclusive_print(INVALIDATELINE);
+                            printf("L2 MESI State: %s\n", mesi_state);
+                        }
+                    }
                 break;
 
 
