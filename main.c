@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 4\n");
                 #endif
-                if(mode) printf("\nFlushWB @ 0x%08X\n", address);
+                if(mode) printf("\nSnooped Operation: FlushWB @ 0x%08X\n", address);
                 break;
 
 
@@ -294,10 +294,10 @@ int main(int argc, char *argv[]) {
                 SnoopReply = SnoopChecker(index, set_index, tag);
                 SendSnoopResult(SnoopReply, snoop_reply);
                     if(mode){
-                        printf("\nBusRdX @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
+                        printf("\nSnooped Operation: BusRdX @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
                         if(strcmp(snoop_reply,"HITM")==0){
                             inclusive_print(EVICTLINE);
-                            printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
+                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
                         } else if(strcmp(snoop_reply,"HIT")==0){
                             inclusive_print(INVALIDATELINE);
                             printf("L2 MESI State: %s\n", mesi_state);
@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
                 SnoopReply = SnoopChecker(index, set_index, tag);
                 SendSnoopResult(SnoopReply, snoop_reply);
                     if(mode){
-                        printf("\nBusUpgr @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
+                        printf("\nSnooped Operation: BusUpgr @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
                         if(strcmp(snoop_reply,"HIT")==0){
                             inclusive_print(INVALIDATELINE);
                             printf("L2 MESI State: %s\n", mesi_state);
