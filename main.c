@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
                 }else {
                     if(mode){
                         printf("\nPrRd MISS @ 0x%08X\n", address);
-                        printf("L2: BusRd @ 0x%08X, Snoop Result: %s", (address & ~(0x3F)), snoop_state);
+                        printf("L2: BusRd @ 0x%08X, Snoop Result: %s\n", (address & ~(0x3F)), snoop_state);
                         if(strcmp(snoop_state,"HITM")==0){
                             printf("Snooped Operation: FlushWB @ 0x%08X\n", address);
                         }
