@@ -283,6 +283,7 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 4\n");
                 #endif
+                if(mode) printf("FlushWB @ 0x%08X\n", address);
                 break;
 
 
@@ -296,6 +297,10 @@ int main(int argc, char *argv[]) {
             case INVALIDATE_S: 	    /* Snoop invalidate command */
                 #ifdef DEBUG
                     fprintf(stderr, "Case 6\n");
+
+                if(mode) printf("InvalidateLine @ 0x%08X\n", address);
+                SnoopReply = SnoopChecker(index, set_index, tag);
+                SendSnoopResult(SnoopReply, snoop_reply);
                 #endif
                 break;
 
@@ -318,13 +323,9 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 9\n");
                 #endif
-                if(mode){
-                    printf("\n--------------------------------Printing Cache Contents--------------------------------\n");
-                }                
+                printf("\n--------------------------------Printing Cache Contents--------------------------------\n");      
                 print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
-                if(mode){
-                    printf("\n---------------------------------------------------------------------------------------\n");
-                }
+                printf("\n---------------------------------------------------------------------------------------\n");
                 break;
 
 
