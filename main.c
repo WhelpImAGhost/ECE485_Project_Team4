@@ -210,7 +210,11 @@ int main(int argc, char *argv[]) {
                 }else {
                     if(mode){
                         printf("\nPrRd MISS @ 0x%08X\n", address);
-                        printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                        printf("L2: BusRd @ 0x%08X, Snoop Result: %s", (address & ~(0x3F)), snoop_state);
+                        if(strcmp(snoop_state,"HITM")==0){
+                            printf("Snooped Operation: FlushWB @ 0x%08X\n", address);
+                        }
+                        printf("L2 Mesi State: %s\n", mesi_state);                        
                         inclusive_print(SENDLINE);
                     }
                 }
@@ -235,8 +239,15 @@ int main(int argc, char *argv[]) {
                 }else {
                         if(mode){
                             printf("\nPrWr MISS @ 0x%08X\n", address);
+                            if(strcmp(snoop_state,"HITM") == 0){
+                            printf("L2: BusRdx @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
+                            printf("Snooped Operation: FlushWB @ 0x%08X\n", address);
+                            inclusive_print(SENDLINE);
+                            }
+                            else{
                             printf("L2: BusRdx @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
                             inclusive_print(SENDLINE);
+                            }
                         }
                 }
                 break;
@@ -255,6 +266,9 @@ int main(int argc, char *argv[]) {
                     if(mode){ 
                         printf("\nPrRd MISS @ 0x%08X\n", address);
                         printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                        if(strcmp(snoop_state,"HITM")==0){
+                            printf("Snooped Operation: FLushWB @0x%08X\n", address);
+                        }
                         inclusive_print(SENDLINE); //Add Mesi Bit
                     }
                 }
