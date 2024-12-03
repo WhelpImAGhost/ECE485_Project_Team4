@@ -291,6 +291,18 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 5\n");
                 #endif
+                SnoopReply = SnoopChecker(index, set_index, tag);
+                SendSnoopResult(SnoopReply, snoop_reply);
+                    if(mode){
+                        printf("\nBusRdX @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
+                        if(strcmp(snoop_reply,"HITM")==0){
+                            inclusive_print(EVICTLINE);
+                            printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
+                        } else if( (strcmp(mesi_state,"SHARED")==0) || (strcmp(mesi_state,"EXCLUSIVE")==0)){
+                            inclusive_print(INVALIDATELINE);
+                            printf("L2 MESI State: %s", mesi_state);
+                        }
+                    }
                 break;
 
 
