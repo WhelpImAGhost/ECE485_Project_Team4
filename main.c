@@ -391,7 +391,6 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         //fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
         #endif
         // Hit if MESI bits are not "INVALID" and address tag == cached tag
-
         if (way->mesi != INVALID && way->tag == tag) {
             // Update PLRU to reflect MRU (Hit)
             UpdatePLRU(index[set_index]->plru, i);
@@ -426,9 +425,16 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         Way *victim_eviction = index[set_index]->ways[victim_line];
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
         old_mesi_state = (index[set_index]->ways[victim_line]->mesi);
+        if(mode){
+            if (old_mesi_state == MODIFIED){
+                inclusive_print(EVICTLINE);
+                printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, old_mesi_state);
+            } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
+                inclusive_print(INVALIDATELINE);
+            }
+        }
         MESI_set(&(victim_eviction->mesi), operation, 0); // Update MESI State based off snoop results
         strcpy(mesi_state, (index[set_index]->ways[victim_line]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[victim_line]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[victim_line]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[victim_line]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
-        inclusive_print(INVALIDATELINE);
         #ifdef DEBUG
             fprintf(stderr, "MESI result: %s\n", mesi_state);
         #endif
