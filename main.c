@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
                         if(strcmp(snoop_reply,"HITM")==0){
                             inclusive_print(EVICTLINE);
                             printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
-                        } else if( (strcmp(mesi_state,"SHARED")==0) || (strcmp(mesi_state,"EXCLUSIVE")==0)){
+                        } else if(strcmp(snoop_reply,"HIT")==0){
                             inclusive_print(INVALIDATELINE);
                             printf("L2 MESI State: %s", mesi_state);
                         }
@@ -567,7 +567,6 @@ void MESI_set(int* mesi, int operation, int hm){
             break;
 
         case WRITE_S: // n = 4
-            *mesi = INVALID;
             break;
 
         case INVALIDATE_S: // n = 6
