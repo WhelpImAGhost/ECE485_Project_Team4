@@ -621,6 +621,7 @@ void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
             index[i]->ways[k]->tag = 0;
             if(index[i]->ways[k]->mesi != 0x0){
                 inclusive_print(INVALIDATELINE);
+                printf("L2: FlushWB @ 0x%08X\n", address);
             }
         }
     }
