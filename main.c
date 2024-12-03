@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
                             inclusive_print(GETLINE);
                             printf("FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
                         } else if( (strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
-                            printf("L2 MESI State: %s", mesi_state);
+                            printf("L2 MESI State: %s\n", mesi_state);
                         }
                     }
                 break;
@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
                 #ifdef DEBUG
                     fprintf(stderr, "Case 4\n");
                 #endif
-                if(mode) printf("FlushWB @ 0x%08X\n", address);
+                if(mode) printf("\nFlushWB @ 0x%08X\n", address);
                 break;
 
 
