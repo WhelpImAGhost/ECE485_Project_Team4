@@ -4,7 +4,7 @@
 #1.1 Process Read and Write Requests
 
 # Check if the required executable exists
-if [ ! -f "./test" ]; then
+if [ ! -f "../test" ]; then
     echo "Error: The './test' executable is not found. Compile your program first."
     exit 1
 fi
@@ -24,7 +24,7 @@ EXPECTED_WRITES=5
 
 # Execute the test with the trace file
 echo "Running cache test with trace file: $TRACE_FILE"
-OUTPUT=$(./test -m 1 -f $TRACE_FILE)
+OUTPUT=$(../test -m 1 -f $TRACE_FILE)
 
 # Display the output for debugging
 echo "Program Output:"

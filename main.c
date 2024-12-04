@@ -286,7 +286,8 @@ int main(int argc, char *argv[]) {
                         if(strcmp(snoop_reply,"HITM")==0){
                             inclusive_print(GETLINE);
                             printf("L2: FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
-                        } else if( (strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
+                        } 
+                        else if( (strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
                             printf("L2 MESI State: %s\n", mesi_state);
                         }
                     }
@@ -419,6 +420,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
         //If not a hit, and there is an invalid way, mark the invalid way to be "filled" upon miss
         else if (way->mesi == INVALID){
             InvalidWays = i;
+            break;
         }
     }
 
@@ -654,7 +656,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
         }
         for (int k = 0; k < assoc; k++) {
             if (index[i]->ways[k]->mesi != INVALID) {
-                printf("    Cache contents for Set %d way %d: MESI STATE %d, TAG: %4X\n", i, k, index[i]->ways[k]->mesi, index[i]->ways[k]->tag );
+                printf("    Cache contents for Set %d way %02d: MESI STATE %02d, TAG: %04X\n", i, k, index[i]->ways[k]->mesi, index[i]->ways[k]->tag );
             }
         }
     }
