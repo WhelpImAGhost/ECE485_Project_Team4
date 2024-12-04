@@ -26,6 +26,10 @@ int mode = 0;       // Default mode for output is Silent
 uint32_t address;
 int operation;
 int old_mesi_state = INVALID; 
+int old_address = 0x00000000;
+int byte_select_bits = 0;
+int index_bits = 0;
+int tag_bits = 0;
 char mesi_state[12] = "INVALID";
 char snoop_state[5] = "NOHIT";
 char snoop_reply[5] = "NOHIT";
@@ -44,7 +48,7 @@ typedef struct {
 /*##################### Function Prototypes ##########################*/
 
 // Function to extract tag, index, and byte select from an address
-void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits);
+void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select);
 // Update PLRU in active set to reflect MRU way
 void UpdatePLRU(int PLRU[], int w );
 // Find LRU way in active set for eviction
@@ -126,13 +130,16 @@ int main(int argc, char *argv[]) {
     /* TAG ARRAY CALCULATIONS 
     Can be used for testing to verify that values can be changed correctly for modularity*/
     const int BYTE_SELECT_BITS = log2(CACHE_LINE_SIZE);
+    byte_select_bits = BYTE_SELECT_BITS;
     const int INDEX_BITS = log2(SETS);
+    index_bits = INDEX_BITS;
     const int TAG_BITS = ADDRESS_SIZE - (BYTE_SELECT_BITS + INDEX_BITS);
+    tag_bits = TAG_BITS;
     const int PLRU_ARRAY_SIZE = (ASSOCIATIVITY - 1);
     const int TOTAL_TAG_ARRAY = (SETS * ((ASSOCIATIVITY * (TAG_BITS + TAG_ARRAY_MESI)) + PLRU_ARRAY_SIZE)) / 8; 	
 
     #ifdef DEBUG
-    fprintf(stderr,"Cache Capacity: %d bytes, # of Cache Lines: %d, # of Sets: %d\n",TRUE_CAPACITY,LINES,SETS);
+    fprintf(stderr,"\nCache Capacity: %d bytes, # of Cache Lines: %d, # of Sets: %d\n",TRUE_CAPACITY,LINES,SETS);
     fprintf(stderr,"# of Byte Select Bits: %d bits, # of Tndex Bits: %d bits, # of Tag Bits: %d bits\n",BYTE_SELECT_BITS,INDEX_BITS,TAG_BITS);
     fprintf(stderr,"PLRU Array Size: %d bits per set, Total Tag Array Size: %d bytes\n",PLRU_ARRAY_SIZE,TOTAL_TAG_ARRAY);
     #endif
@@ -186,7 +193,7 @@ int main(int argc, char *argv[]) {
     while (fscanf(file, "%d %x", &operation, &address) == 2) {
 
         // Breakdown address into proper components for storage in the cache
-        extract_address_components(address, &tag, &set_index, &byte_select, TAG_BITS, INDEX_BITS, BYTE_SELECT_BITS);
+        extract_address_components(address, &tag, &set_index, &byte_select);
 
         // If Debug is Active, Display Operation and Address Components
         #ifdef DEBUG
@@ -200,15 +207,15 @@ int main(int argc, char *argv[]) {
 
             case READ_HD:           /* Read request from higher data cache */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 0\n");
+                    fprintf(stderr, "\nCase 0\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
                 cache_statistics(operation, CacheResult, finished_program);
-                if (CacheResult) {
+                if (CacheResult == 1) {
                     if(mode){printf("\nPrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
                     inclusive_print(SENDLINE);
                     }
-                }else {
+                }else if (CacheResult == 0){
                     if(mode){
                         printf("\nPrRd MISS @ 0x%08X\n", address);
                         printf("L2: BusRd @ 0x%08X, Snoop Result: %s\n", (address & ~(0x3F)), snoop_state);
@@ -218,16 +225,37 @@ int main(int argc, char *argv[]) {
                         printf("L2 Mesi State: %s\n", mesi_state);                        
                         inclusive_print(SENDLINE);
                     }
+                } else if (CacheResult == 2){
+                    if(mode){
+                        if (old_mesi_state == MODIFIED){
+                            printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
+                            printf("L2: EVICTLINE 0x%08X\n", (old_address));
+                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address)); //Writeback Old Address
+                            printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                            if(strcmp(snoop_state,"HITM")==0){
+                                printf("Snooped Operation: FLushWB @0x%08X\n", address);
+                                inclusive_print(SENDLINE);
+                            }
+                            else{
+                                inclusive_print(SENDLINE);
+                            }
+                        } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
+                        printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
+                        printf("L2: INVALIDATELINE 0x%08X\n", (old_address));
+                        printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                        inclusive_print(SENDLINE);
+                        }
+                    }
                 }
                 break;
 
             case WRITE_HD:		    /* Write request from higher data cache */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 1\n");
+                    fprintf(stderr, "\nCase 1\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
                 cache_statistics(operation, CacheResult, finished_program);
-                if (CacheResult) {
+                if (CacheResult == 1) {
                     if(mode){
                         printf("\nPrWr HIT @ 0x%08X, L2 Mesi State: %s\n", address, mesi_state);
                         if ( old_mesi_state == EXCLUSIVE || old_mesi_state == MODIFIED ){
@@ -238,7 +266,7 @@ int main(int argc, char *argv[]) {
                             inclusive_print(SENDLINE);
                         }
                     }
-                }else {
+                }else if (CacheResult == 0){
                         if(mode){
                             printf("\nPrWr MISS @ 0x%08X\n", address);
                             if(strcmp(snoop_state,"HITM") == 0){
@@ -251,21 +279,42 @@ int main(int argc, char *argv[]) {
                             inclusive_print(SENDLINE);
                             }
                         }
+                } else if (CacheResult == 2){
+                    if(mode){
+                        if (old_mesi_state == MODIFIED){
+                            printf("\nPrWr CAPACITY MISS @ 0x%08X\n", address);
+                            printf("L2: EVICTLINE 0x%08X\n", (old_address));
+                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address)); //Writeback Old Address
+                            printf("L2: BusRdX @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
+                            if(strcmp(snoop_state,"HITM")==0){
+                                printf("Snooped Operation: FLushWB @0x%08X\n", address);
+                                inclusive_print(SENDLINE);
+                            }
+                            else{
+                                inclusive_print(SENDLINE);
+                            }
+                        } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
+                        printf("\nPrWr CAPACITY MISS @ 0x%08X\n", address);
+                       printf("L2: INVALIDATELINE 0x%08X\n", (old_address));
+                        printf("L2: BusRdX @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
+                        inclusive_print(SENDLINE);
+                        }
+                    }
                 }
                 break;
 
                 
             case READ_HI: 		    /* Read request from higher instruction cache */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 2\n");
+                    fprintf(stderr, "\nCase 2\n");
                 #endif
                 CacheResult = hit_or_miss(index, set_index, tag);
                 cache_statistics(operation, CacheResult, finished_program);
-                if (CacheResult) {
+                if (CacheResult ==1 ) {
                     if(mode){ printf("\nPrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
                     inclusive_print(SENDLINE);
                     }
-                }else {
+                }else if (CacheResult == 0){
                     if(mode){ 
                         printf("\nPrRd MISS @ 0x%08X\n", address);
                         printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
@@ -276,12 +325,34 @@ int main(int argc, char *argv[]) {
                         }
                     }
                 }
+                else if (CacheResult == 2){
+                    if(mode){
+                        if (old_mesi_state == MODIFIED){
+                            printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
+                            printf("L2: EVICTLINE 0x%08X\n", (old_address));
+                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address)); //Writeback Old Address
+                            printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                            if(strcmp(snoop_state,"HITM")==0){
+                                printf("Snooped Operation: FLushWB @0x%08X\n", address);
+                                inclusive_print(SENDLINE);
+                            }
+                            else{
+                                inclusive_print(SENDLINE);
+                            }
+                        } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
+                        printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
+                       printf("L2: INVALIDATELINE 0x%08X\n", (old_address));
+                        printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                        inclusive_print(SENDLINE);
+                        }
+                    }
+                }
                 break;
 
 
             case READ_S: 		    /* Snoop read request */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 3\n");
+                    fprintf(stderr, "\nCase 3\n");
                 #endif
                 SnoopReply = SnoopChecker(index, set_index, tag);
                 SendSnoopResult(SnoopReply, snoop_reply);
@@ -299,7 +370,7 @@ int main(int argc, char *argv[]) {
                 
             case WRITE_S: 		    /* Snoop write request */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 4\n");
+                    fprintf(stderr, "\nCase 4\n");
                 #endif
                 if(mode) printf("\nSnooped Operation: FlushWB @ 0x%08X\n", address);
                 break;
@@ -307,7 +378,7 @@ int main(int argc, char *argv[]) {
 
             case RWIM_S: 		    /* Snoop read with intent to modify request */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 5\n");
+                    fprintf(stderr, "\nCase 5\n");
                 #endif
                 SnoopReply = SnoopChecker(index, set_index, tag);
                 SendSnoopResult(SnoopReply, snoop_reply);
@@ -326,7 +397,7 @@ int main(int argc, char *argv[]) {
 
             case INVALIDATE_S: 	    /* Snoop invalidate command */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 6\n");
+                    fprintf(stderr, "\nCase 6\n");
 
                 #endif
                 SnoopReply = SnoopChecker(index, set_index, tag);
@@ -343,7 +414,7 @@ int main(int argc, char *argv[]) {
 
             case CLEAR: 		    /* Clear the cache and reset all states */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 8\n");
+                    fprintf(stderr, "\nCase 8\n");
                 #endif
                 if(mode){
                     printf("\n--------------------------------Clearing Cache Contents--------------------------------\n");
@@ -357,7 +428,7 @@ int main(int argc, char *argv[]) {
 
             case PRINT: 		    /* Print content and state of each valid cache line */
                 #ifdef DEBUG
-                    fprintf(stderr, "Case 9\n");
+                    fprintf(stderr, "\nCase 9\n");
                 #endif
                 printf("\n--------------------------------Printing Cache Contents--------------------------------\n");      
                 print_cache(index, SETS, PLRU_ARRAY_SIZE, ASSOCIATIVITY);
@@ -382,7 +453,7 @@ return 0;
 /*#################### Function declarations ####################*/
 
 // Function to extract tag, index, and byte select from an address
-void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select, int tag_bits, int index_bits, int byte_select_bits) {
+void extract_address_components(unsigned int address, int *tag, int *set_index, int *byte_select) {
     // Mask for the least significant 'Byte Select' bits
     unsigned int byte_select_mask = (1 << byte_select_bits) - 1;
     // Mask for the next 'Index' Bits
@@ -438,28 +509,22 @@ int hit_or_miss(Set *index[], int set_index, int tag){
             fprintf(stderr, "MESI result: %s\n", mesi_state);
         #endif
         UpdatePLRU(index[set_index]->plru, InvalidWays); // Update PLRU for the newly entered way
+        return 0; //Miss
     // Miss with a full set
     } else {
         int victim_line = VictimPLRU(index[set_index]->plru, *index[set_index]->ways); // Decide which way is a the LRU
         Way *victim_eviction = index[set_index]->ways[victim_line];
+        old_address = (((index[set_index]->ways[victim_line]->tag) << (byte_select_bits + index_bits)) + (set_index << byte_select_bits));
         victim_eviction ->tag = tag; // Replace the victim ways tag with current tag
         old_mesi_state = (index[set_index]->ways[victim_line]->mesi);
-        if(mode){
-            if (old_mesi_state == MODIFIED){
-                inclusive_print(EVICTLINE);
-                printf("FlushWB @ 0x%08X, L2 MESI State: INVALID\n", address);
-            } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
-                inclusive_print(INVALIDATELINE);
-            }
-        }
         MESI_set(&(victim_eviction->mesi), operation, 0); // Update MESI State based off snoop results
         strcpy(mesi_state, (index[set_index]->ways[victim_line]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[victim_line]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[victim_line]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[victim_line]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
         #ifdef DEBUG
             fprintf(stderr, "MESI result: %s\n", mesi_state);
         #endif
         UpdatePLRU(index[set_index]->plru, victim_line); // Update PLRU for the newly entered way
+        return 2;
     }
-    return 0; //Miss
 }
 
 
