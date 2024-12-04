@@ -133,8 +133,8 @@ int main(int argc, char *argv[]) {
 
     #ifdef DEBUG
     fprintf(stderr,"Cache Capacity: %d bytes, # of Cache Lines: %d, # of Sets: %d\n",TRUE_CAPACITY,LINES,SETS);
-    fprintf(stderr," # of Byte Select Bits: %d bits, # of Tndex Bits: %d bits, # of Tag Bits: %d bits\n",BYTE_SELECT_BITS,INDEX_BITS,TAG_BITS);
-    fprintf(stderr," PLRU Array Size: %d bits per set, Total Tag Array Size: %d bytes\n",PLRU_ARRAY_SIZE,TOTAL_TAG_ARRAY);
+    fprintf(stderr,"# of Byte Select Bits: %d bits, # of Tndex Bits: %d bits, # of Tag Bits: %d bits\n",BYTE_SELECT_BITS,INDEX_BITS,TAG_BITS);
+    fprintf(stderr,"PLRU Array Size: %d bits per set, Total Tag Array Size: %d bytes\n",PLRU_ARRAY_SIZE,TOTAL_TAG_ARRAY);
     #endif
 
     /* Include tests for if the tag is too big or index is too big
@@ -206,6 +206,7 @@ int main(int argc, char *argv[]) {
                 cache_statistics(operation, CacheResult, finished_program);
                 if (CacheResult) {
                     if(mode){printf("\nPrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
+                    inclusive_print(SENDLINE);
                     }
                 }else {
                     if(mode){
@@ -228,12 +229,13 @@ int main(int argc, char *argv[]) {
                 cache_statistics(operation, CacheResult, finished_program);
                 if (CacheResult) {
                     if(mode){
-                        printf("\nPrWr HIT @ 0x%08X, %s\n", address, mesi_state);
+                        printf("\nPrWr HIT @ 0x%08X, L2 Mesi State: %s\n", address, mesi_state);
                         if ( old_mesi_state == EXCLUSIVE || old_mesi_state == MODIFIED ){
-                            break;
+                            inclusive_print(SENDLINE);
                         }
                         else if( old_mesi_state == SHARED ){
                             printf("L2: BusUpgr @ 0x%08X\n", (address & ~(0x3F)));
+                            inclusive_print(SENDLINE);
                         }
                     }
                 }else {
@@ -261,15 +263,17 @@ int main(int argc, char *argv[]) {
                 cache_statistics(operation, CacheResult, finished_program);
                 if (CacheResult) {
                     if(mode){ printf("\nPrRd HIT @ 0x%08X, MESI State: %s\n", address, mesi_state);
+                    inclusive_print(SENDLINE);
                     }
                 }else {
                     if(mode){ 
                         printf("\nPrRd MISS @ 0x%08X\n", address);
                         printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
+                        inclusive_print(SENDLINE);
                         if(strcmp(snoop_state,"HITM")==0){
                             printf("Snooped Operation: FLushWB @0x%08X\n", address);
+                            inclusive_print(SENDLINE); //Add Mesi Bit
                         }
-                        inclusive_print(SENDLINE); //Add Mesi Bit
                     }
                 }
                 break;
@@ -286,8 +290,7 @@ int main(int argc, char *argv[]) {
                         if(strcmp(snoop_reply,"HITM")==0){
                             inclusive_print(GETLINE);
                             printf("L2: FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
-                        } 
-                        else if( (strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
+                        } else if((strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
                             printf("L2 MESI State: %s\n", mesi_state);
                         }
                     }
@@ -525,16 +528,25 @@ int SnoopChecker(Set *index[], int set_index, int tag) {
             if (way->mesi == MODIFIED) {
                 MESI_set(&(index[set_index]->ways[i]->mesi), operation, 0);
                 strcpy(mesi_state, (index[set_index]->ways[i]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[i]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[i]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[i]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));
+                #ifdef DEBUG
+                fprintf(stderr, "Modified Line\n");
+                #endif
                 return HITM; // Hit in Modified state
             } else if (way->mesi == EXCLUSIVE || way->mesi == SHARED) {
                 MESI_set(&(index[set_index]->ways[i]->mesi), operation, 0);
                 strcpy(mesi_state, (index[set_index]->ways[i]->mesi == INVALID) ? "INVALID" : ((index[set_index]->ways[i]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[set_index]->ways[i]->mesi == SHARED) ? "SHARED" : ((index[set_index]->ways[i]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))));   
+                #ifdef DEBUG
+                fprintf(stderr, "Exclusive or Shared Line\n");
+                #endif
                 return HIT; // Hit in Exclusive or Shared state
             }
         }
     }
-
+    #ifdef DEBUG
+    fprintf(stderr, "Invalid Line\n");
+    #endif
     // No hit found
+    strcpy(mesi_state, "INVALID");
     return NOHIT1;
 }
 
@@ -588,6 +600,9 @@ void MESI_set(int* mesi, int operation, int hm){
             else if (*mesi == SHARED) {
                 *mesi = SHARED;
             }
+            else{
+                *mesi = INVALID;
+            }
             break;
 
         case RWIM_S: // n = 5
@@ -619,12 +634,16 @@ void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
         }
 
         for (int k = 0; k < assoc; k++) {
+            if(index[i]->ways[k]->mesi != 0x0){
+                if(index[i]->ways[k]->mesi == MODIFIED){
+                    printf("L2: FlushWB @ 0x%08X\n", address);
+                    inclusive_print(EVICTLINE);
+                } else if ((index[i]->ways[k]->mesi == EXCLUSIVE)||(index[i]->ways[k]->mesi == SHARED)){
+                    inclusive_print(INVALIDATELINE);
+                }
+            }
             index[i]->ways[k]->mesi = INVALID;
             index[i]->ways[k]->tag = 0;
-            if(index[i]->ways[k]->mesi != 0x0){
-                inclusive_print(INVALIDATELINE);
-                printf("L2: FlushWB @ 0x%08X\n", address);
-            }
         }
     }
     return;
