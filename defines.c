@@ -8,7 +8,7 @@
 #define NOHIT1 0b10		/* No hit */
 #define NOHIT2 0b11     /* No hit */
 #define HIT 0b00		/* Hit */
-#define HITM 0b01		/* Hit to modified liner */
+#define HITM 0b01		/* Hit to modified line */
 
 /* Bus Operation Types */
 #define READ 0b00		/* Bus Read */
