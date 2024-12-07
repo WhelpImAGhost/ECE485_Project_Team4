@@ -702,9 +702,10 @@ void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
             if(index[i]->ways[k]->mesi != 0x0){
                 address = (((index[i]->ways[k]->tag) << (byte_select_bits + index_bits)) + (i << byte_select_bits));
                 if(index[i]->ways[k]->mesi == MODIFIED){
-                    printf("L2: FlushWB @ 0x%08X\n", address);
+                    printf("\nL2: FlushWB @ 0x%08X\n", address);
                     inclusive_print(EVICTLINE);
                 } else if ((index[i]->ways[k]->mesi == EXCLUSIVE)||(index[i]->ways[k]->mesi == SHARED)){
+                    printf("\n");
                     inclusive_print(INVALIDATELINE);
                 }
             }
