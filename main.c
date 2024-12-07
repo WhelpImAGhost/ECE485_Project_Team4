@@ -740,7 +740,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
         }
         for (int k = 0; k < assoc; k++) {
             if (index[i]->ways[k]->mesi != INVALID) {
-                printf("    Cache contents for Set %d way %02d: MESI STATE %02d, TAG: %04X\n", i, k, index[i]->ways[k]->mesi, index[i]->ways[k]->tag );
+                printf("    Cache contents for Set %d way %02d- MESI STATE: %02d, TAG: %04X\n", i, k, index[i]->ways[k]->mesi, index[i]->ways[k]->tag );
             }
         }
     }
