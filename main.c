@@ -700,6 +700,7 @@ void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
 
         for (int k = 0; k < assoc; k++) {
             if(index[i]->ways[k]->mesi != 0x0){
+                address = (((index[i]->ways[k]->tag) << (byte_select_bits + index_bits)) + (i << byte_select_bits));
                 if(index[i]->ways[k]->mesi == MODIFIED){
                     printf("L2: FlushWB @ 0x%08X\n", address);
                     inclusive_print(EVICTLINE);
@@ -740,6 +741,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
         }
         for (int k = 0; k < assoc; k++) {
             if (index[i]->ways[k]->mesi != INVALID) {
+                
                 printf("    Cache contents for Set %d way %02d: MESI STATE: %s, TAG: %04X\n", i, k, (index[i]->ways[k]->mesi == INVALID) ? "INVALID" : ((index[i]->ways[k]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[i]->ways[k]->mesi == SHARED) ? "SHARED" : ((index[i]->ways[k]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))), index[i]->ways[k]->tag );
             }
         }
