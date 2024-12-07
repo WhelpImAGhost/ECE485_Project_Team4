@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 
 
     // Set default filename
-    char *default_filename = "Default.din";
+    char *default_filename = "Other_dins/Default.din";
     char *filename = default_filename;
     int cache_size = CACHE_SIZE;
     int tag, set_index, byte_select;
@@ -740,7 +740,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
         }
         for (int k = 0; k < assoc; k++) {
             if (index[i]->ways[k]->mesi != INVALID) {
-                printf("    Cache contents for Set %d way %02d: MESI STATE %02d, TAG: %04X\n", i, k, index[i]->ways[k]->mesi, index[i]->ways[k]->tag );
+                printf("    Cache contents for Set %d way %02d: MESI STATE: %s, TAG: %04X\n", i, k, (index[i]->ways[k]->mesi == INVALID) ? "INVALID" : ((index[i]->ways[k]->mesi == EXCLUSIVE) ? "EXCLUSIVE" : ((index[i]->ways[k]->mesi == SHARED) ? "SHARED" : ((index[i]->ways[k]->mesi == MODIFIED) ? "MODIFIED" : "NaN"))), index[i]->ways[k]->tag );
             }
         }
     }
