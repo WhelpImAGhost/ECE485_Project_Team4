@@ -239,9 +239,9 @@ int main(int argc, char *argv[]) {
                 } else if (CacheResult == 2){
                     if(mode){
                         if (old_mesi_state == MODIFIED){
-                            printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
+                            printf("\nPrRd COLLISION MISS @ 0x%08X\n", address);
                             printf("L2: EVICTLINE 0x%08X\n", (old_address));
-                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address)); //Writeback Old Address
+                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address));
                             printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
                             if(strcmp(snoop_state,"HITM")==0){
                                 printf("Snooped Operation: FLushWB @0x%08X\n", address);
@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
                                 inclusive_print(SENDLINE);
                             }
                         } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
-                        printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
+                        printf("\nPrRd COLLISION MISS @ 0x%08X\n", address);
                         printf("L2: INVALIDATELINE 0x%08X\n", (old_address));
                         printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
                         inclusive_print(SENDLINE);
@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
                 } else if (CacheResult == 2){
                     if(mode){
                         if (old_mesi_state == MODIFIED){
-                            printf("\nPrWr CAPACITY MISS @ 0x%08X\n", address);
+                            printf("\nPrWr COLLISION MISS @ 0x%08X\n", address);
                             printf("L2: EVICTLINE 0x%08X\n", (old_address));
                             printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address)); //Writeback Old Address
                             printf("L2: BusRdX @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
@@ -305,7 +305,7 @@ int main(int argc, char *argv[]) {
                                 inclusive_print(SENDLINE);
                             }
                         } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
-                        printf("\nPrWr CAPACITY MISS @ 0x%08X\n", address);
+                        printf("\nPrWr COLLISION MISS @ 0x%08X\n", address);
                        printf("L2: INVALIDATELINE 0x%08X\n", (old_address));
                         printf("L2: BusRdX @ 0x%08X, MESI State: %s\n", (address & ~(0x3F)), mesi_state);
                         inclusive_print(SENDLINE);
@@ -339,7 +339,7 @@ int main(int argc, char *argv[]) {
                 else if (CacheResult == 2){
                     if(mode){
                         if (old_mesi_state == MODIFIED){
-                            printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
+                            printf("\nPrRd COLLISION MISS @ 0x%08X\n", address);
                             printf("L2: EVICTLINE 0x%08X\n", (old_address));
                             printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address));
                             printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
@@ -351,7 +351,7 @@ int main(int argc, char *argv[]) {
                                 inclusive_print(SENDLINE);
                             }
                         } else if ((old_mesi_state == EXCLUSIVE) || (old_mesi_state == SHARED)){
-                        printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
+                        printf("\nPrRd COLLISION MISS @ 0x%08X\n", address);
                        printf("L2: INVALIDATELINE 0x%08X\n", (old_address));
                         printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
                         inclusive_print(SENDLINE);
@@ -721,8 +721,8 @@ void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
             if(index[i]->ways[k]->mesi != 0x0){
                 address = (((index[i]->ways[k]->tag) << (byte_select_bits + index_bits)) + (i << byte_select_bits));
                 if(index[i]->ways[k]->mesi == MODIFIED){
-                    printf("\nL2: FlushWB @ 0x%08X\n", address);
                     inclusive_print(EVICTLINE);
+                    printf("L2: FlushWB @ 0x%08X\n", address);
                 } else if ((index[i]->ways[k]->mesi == EXCLUSIVE)||(index[i]->ways[k]->mesi == SHARED)){
                     printf("\n");
                     inclusive_print(INVALIDATELINE);
