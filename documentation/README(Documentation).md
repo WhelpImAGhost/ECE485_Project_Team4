@@ -4,7 +4,10 @@
 - Ameer Melli
 - Caleb Monti
 
-## Overleaf Text Editor Live Document Links
-([ECE 585 Simulated Cache Test Plan (Team #4)](https://www.overleaf.com/read/xwvqgmzzkpys#500038))
+### Overleaf Text Editor Live Document Links
+## Data Structure Explanation
 ([ECE 585 Data Structure Explanation + Sketches](https://www.overleaf.com/read/krtsbsrbwmhw#35ddfa))
-([ECE 585 Simulated Cache Final Report (Team #4)](https://www.overleaf.com/read/mdmtwcjswhsp#a56283))
+## Test Plan
+([ECE 585 Simulated Cache Test Plan (Team #4)](https://www.overleaf.com/read/xwvqgmzzkpys#500038))
+## Final Report
+([ECE 585 Simulated LLC Final Report (Team #4)](https://www.overleaf.com/read/mdmtwcjswhsp#a56283))
