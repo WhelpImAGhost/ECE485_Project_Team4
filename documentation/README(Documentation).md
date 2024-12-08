@@ -4,7 +4,7 @@
 - Ameer Melli
 - Caleb Monti
 
-### Overleaf Text Editor Live Document Links
+# Overleaf Text Editor Live Document Links
 ## Data Structure Explanation
 ([ECE 585 Data Structure Explanation + Sketches](https://www.overleaf.com/read/krtsbsrbwmhw#35ddfa))
 ## Test Plan
