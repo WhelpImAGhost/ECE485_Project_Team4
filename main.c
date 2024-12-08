@@ -6,11 +6,9 @@
 * Caleb Monti
 * Chris Kane-Pardy
 * 
-* This is the test branch
 * gcc main.c -o test -DDEBUG (to run debug mode with prints)
 * gcc main.c -o test (run without Debug Mode Active)
 * ./test (run code)
-* ./test rwims.din (to run with a file name)
 ######################################################################*/
 
 #include <stdio.h>
