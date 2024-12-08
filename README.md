@@ -18,3 +18,12 @@ The purpose of this code is to simulate a Lowest Level Cache (LLC) in a multi-le
 ## Changing Default Parameters
 If you wish to use this program with non-default values, such as a larger cache size or a different set associative value, the easiest way is to change the values within  [defines.c](https://github.com/WhelpImAGhost/ECE485_Project_Team4/blob/main/defines.c). 
 For rapid testing and switching parameters, the main.c function can be changed to accept more runtime arguments. 
+
+## Test Cases
+Our .din trace files used for testing can all be found in the [TestCases Folder](https://github.com/WhelpImAGhost/ECE485_Project_Team4/tree/main/TestCases).
+From there they're organized in more folders, which correspond to the aspect of the cache we were testing.
+
+## Documentation and Final report
+We used overleaf (online LaTeX editor) rather than google docs to format our report, test plan, and some intermediary works. The links to those live documents are in the 
+in the [documentation](https://github.com/WhelpImAGhost/ECE485_Project_Team4/tree/main/documentation) folder in the ([README(documentation)](https://github.com/WhelpImAGhost/ECE485_Project_Team4/blob/main/documentation/README(Documentation).md)) markdown.
+The PDFs of each also resides in there.
