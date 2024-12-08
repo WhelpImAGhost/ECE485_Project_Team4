@@ -360,7 +360,7 @@ int main(int argc, char *argv[]) {
                         printf("\nSnooped Operation: BusRd @ 0x%08X, L2 Snoop Result: %s\n", address, snoop_reply);
                         if(strcmp(snoop_reply,"HITM")==0){
                             inclusive_print(GETLINE);
-                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: %s\n", address, mesi_state);       
+                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: %s\n", (address & ~(0x3F)), mesi_state);       
                         } else if((strcmp(mesi_state,"EXCLUSIVE")==0) || (strcmp(mesi_state,"SHARED")==0)){
                             printf("L2 MESI State: %s\n", mesi_state);
                         }
