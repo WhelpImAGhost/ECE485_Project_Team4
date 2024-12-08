@@ -460,6 +460,36 @@ int main(int argc, char *argv[]) {
     cache_statistics(operation, CacheResult, finished_program);
     fclose(file);  // Close the file
 
+    for (int i = 0; i < SETS; i++) {
+    if (index[i] != NULL) {
+        // Free each Way in the Set
+        for (int k = 0; k < ASSOCIATIVITY; k++) {
+            if (index[i]->ways[k] != NULL) {
+                free(index[i]->ways[k]);
+                index[i]->ways[k] = NULL;
+            }
+        }
+
+        // Free the Ways array
+        if (index[i]->ways != NULL) {
+            free(index[i]->ways);
+            index[i]->ways = NULL;
+        }
+
+        // Free the PLRU array
+        if (index[i]->plru != NULL) {
+            free(index[i]->plru);
+            index[i]->plru = NULL;
+        }
+
+        // Free the Set itself
+        free(index[i]);
+        index[i] = NULL;
+    }
+}
+
+
+
 return 0;
 }
 
