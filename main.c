@@ -20,10 +20,10 @@
 #include "defines.c"
 
 /*####################### Global variables ###########################*/
-int mode = 0;       // Default mode for output is Silent
-uint32_t address;
-int operation;
-int old_mesi_state = INVALID; 
+int mode = 0;                  // Default mode for output is Silent
+uint32_t address;              // Input Address
+int operation;                 // Cache Operation
+int old_mesi_state = INVALID;
 int old_address = 0x00000000;
 int byte_select_bits = 0;
 int index_bits = 0;
