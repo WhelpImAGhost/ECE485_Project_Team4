@@ -23,7 +23,7 @@ if [ ! -f "../test" ]; then
 fi
 
 # Input trace file
-TRACE_FILE="test_cache_stats.din"
+TRACE_FILE="11_1.din"
 
 # Check if the trace file exists
 if [ ! -f "$TRACE_FILE" ]; then
@@ -36,11 +36,11 @@ EXPECTED_READS=7
 EXPECTED_WRITES=5
 
 # Expected cache miss and hits countsbased on the trace file
-EXPECTED_HITS=3
-EXPECTED_MISSES=9
+EXPECTED_HITS=4
+EXPECTED_MISSES=8
 
 # This is the expected cache hit ratio
-EXPECTED_RATIO=0.25000
+EXPECTED_RATIO=0.33333
 
 # Execute the test with the trace file
 echo "Running cache test with trace file: $TRACE_FILE"
