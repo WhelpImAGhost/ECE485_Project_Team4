@@ -7,3 +7,4 @@
 ## Overleaf Text Editor Live Document Links
 ([ECE 585 Simulated Cache Test Plan (Team #4)](https://www.overleaf.com/read/xwvqgmzzkpys#500038))
 ([ECE 585 Data Structure Explanation + Sketches](https://www.overleaf.com/read/krtsbsrbwmhw#35ddfa))
+([ECE 585 Simulated Cache Final Report (Team #4)](https://www.overleaf.com/read/mdmtwcjswhsp#a56283))
