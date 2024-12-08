@@ -78,6 +78,8 @@ int main(int argc, char *argv[]) {
     // Set default filename
     char *default_filename = "Other_dins/Default.din";
     char *filename = default_filename;
+
+    // Cache usage and tracking variables
     int cache_size = CACHE_SIZE;
     int tag, set_index, byte_select;
     int CacheResult;
@@ -85,7 +87,6 @@ int main(int argc, char *argv[]) {
 
 
     // Flags for setting non-default variable vvalues
-
     for( argc--, argv++; argc > 0; argc-=2, argv+=2 ) {
 		if (strcmp(argv[0], "-m" ) == 0 ) 
             mode = atoi(argv[1]); // Set normal operation
@@ -98,12 +99,14 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+    // If in debug mode, always set verbosity to "normal mode"
     #ifdef DEBUG
         mode = 1;
     #endif
 
-    // Check if user provided a filename as an argument
+    /*################## File and Variable Initialization #################*/
 
+    // Load given file (if there was one)
     FILE *file = fopen(filename, "r");
 
     // If the provided file can't be opened, try the default file
@@ -116,10 +119,11 @@ int main(int argc, char *argv[]) {
     // Check if the file (either provided or default) was successfully opened
     if (file == NULL) {
         perror("Error opening file");
+        // Exit the program if file opening fails
         return 1;
     }
 
-    // Display active file name
+    // Display active file name 
     fprintf(stderr, "Using file: %s\n", filename);
 
     /* MEMORY SIZE CALCULATIONS */
@@ -138,52 +142,58 @@ int main(int argc, char *argv[]) {
     const int PLRU_ARRAY_SIZE = (ASSOCIATIVITY - 1);
     const int TOTAL_TAG_ARRAY = (SETS * ((ASSOCIATIVITY * (TAG_BITS + TAG_ARRAY_MESI)) + PLRU_ARRAY_SIZE)) / 8; 	
 
+    // Display in-depth cache values if in debug mode
     #ifdef DEBUG
     fprintf(stderr,"\nCache Capacity: %d bytes, # of Cache Lines: %d, # of Sets: %d\n",TRUE_CAPACITY,LINES,SETS);
     fprintf(stderr,"# of Byte Select Bits: %d bits, # of Tndex Bits: %d bits, # of Tag Bits: %d bits\n",BYTE_SELECT_BITS,INDEX_BITS,TAG_BITS);
     fprintf(stderr,"PLRU Array Size: %d bits per set, Total Tag Array Size: %d bytes\n",PLRU_ARRAY_SIZE,TOTAL_TAG_ARRAY);
     #endif
 
-    /* Include tests for if the tag is too big or index is too big
-    (go to default if the input values are out of bounds). */
-
+    // Prepare cache initialization variables
     int plru_array[PLRU_ARRAY_SIZE]; //Initialize PLRU Array
-
     Set *index[SETS]; // Array of Set Pointers
 
     // This checks if the input file finished for the cache stats
     bool finished_program = false;
 
-    /*################## Initializing Data Structures #################*/
+    /*################## Initializing Data Structure #################*/
     for (int i = 0; i < SETS; i++) {
+
+        // Allocate space for the Set
         index[i] = (Set *)malloc(sizeof(Set));
         if (index[i] == NULL) {
             perror("Failed to allocate memory for Set");
             exit(EXIT_FAILURE);
         }
 
+        // Initialize and allocate the PLRU for the Set
         index[i]->plru = (int *)malloc(PLRU_ARRAY_SIZE * sizeof(int));
         if (index[i]->plru == NULL) {
             perror("Failed to allocate memory for PLRU array");
             exit(EXIT_FAILURE);
         }
 
+        // Set each PLRU bit to 0 for the Set
         for (int j = 0; j < PLRU_ARRAY_SIZE; j++) {
             index[i]->plru[j] = 0;
         }
 
+        // Initialize and allocate the storage for all Ways in the Set
         index[i]->ways = (Way **)malloc(ASSOCIATIVITY * sizeof(Way *));
         if (index[i]->ways == NULL) {
             perror("Failed to allocate memory for Way array");
             exit(EXIT_FAILURE);
         }
 
+        // For each Way, allocate space
         for (int k = 0; k < ASSOCIATIVITY; k++) {
             index[i]->ways[k] = (Way *)malloc(sizeof(Way));
             if (index[i]->ways[k] == NULL) {
                 perror("Failed to allocate memory for Way");
                 exit(EXIT_FAILURE);
             }
+
+            // Set each tag to 0 and each MESI state to INVALID
             index[i]->ways[k]->mesi = INVALID;
             index[i]->ways[k]->tag = 0;
         }
@@ -203,6 +213,9 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Extracted Byte Select: 0x%X\n", byte_select);
         #endif
 
+        // Run functions based on selected operation
+            // Function descriptions listed in Function Prototypes 
+            // Detailed function operation in functions section below main function
         switch (operation) {
 
             case READ_HD:           /* Read request from higher data cache */
@@ -443,6 +456,8 @@ int main(int argc, char *argv[]) {
 
 
     }
+
+    // Trigger end-of-file sequence and report cache statistics
     finished_program = true;
     cache_statistics(operation, CacheResult, finished_program);
     fclose(file);  // Close the file
@@ -475,6 +490,7 @@ int hit_or_miss(Set *index[], int set_index, int tag){
     for (int i = 0; i < ASSOCIATIVITY; i++){
         Way *way = index[set_index]->ways[i];
 
+        // Excessive debug statement for high-detail MESI tracking
         #ifdef DEBUG
         //fprintf(stderr, "Current tag: 0x%2X, New tag: 0x%2X\n" , way->tag, tag );
         //fprintf(stderr, "Current MESI bits: %d\n", way->mesi);
@@ -584,6 +600,7 @@ int GetSnoopResult(char* snoop_state) {
 
 }
 
+// Return snoop result for snooped operations 
 int SnoopChecker(Set *index[], int set_index, int tag) {
     
     for (int i = 0; i < ASSOCIATIVITY; i++) {
@@ -615,6 +632,7 @@ int SnoopChecker(Set *index[], int set_index, int tag) {
     return NOHIT1;
 }
 
+// Return snoop result as a string for better print statements
 void SendSnoopResult(int SnoopCheck, char* snoop_reply) {
     if (snoop_reply != NULL) {
         // Ensure the reply matches the snoop result
@@ -630,7 +648,7 @@ void MESI_set(int* mesi, int operation, int hm){
 
     int snoop = GetSnoopResult(snoop_state);
 
-
+    // Update MESI bits based on operation
     switch (operation){
 
         
@@ -690,14 +708,17 @@ void MESI_set(int* mesi, int operation, int hm){
 
 }
 
+// Empty cache contents and echo Inclusivity statements to L1 cache
 void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
 
     for (int i = 0; i < sets; i++){
 
-        for (int j = 0; j < plru_size; j++) {
+        // Erase PLRU
+        for (int j = 0; j   < plru_size; j++) {
             index[i]->plru[j] = 0;
         }
 
+        // Erase tag and set MESI to INVALID
         for (int k = 0; k < assoc; k++) {
             if(index[i]->ways[k]->mesi != 0x0){
                 address = (((index[i]->ways[k]->tag) << (byte_select_bits + index_bits)) + (i << byte_select_bits));
@@ -716,7 +737,7 @@ void clear_cache (Set *index[], int sets, int plru_size, int assoc) {
     return;
 }
 
-
+// Print active/valid contents of cache
 void print_cache (Set *index[], int sets, int plru_size, int assoc) {
     bool check = false;
     
@@ -724,6 +745,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
 
         check = false;
 
+        // Check for any valid ways in Set
         for (int a = 0; a < assoc; a++){
             if (index[i]->ways[a]->mesi != INVALID){
                 check = true;
@@ -731,6 +753,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
 
         }
 
+        // If there is at least one valid way, print PLRU bits
         if (check) {
             printf("Set %d PLRU: ", i);
             for (int j = 0; j < plru_size; j++){
@@ -740,6 +763,7 @@ void print_cache (Set *index[], int sets, int plru_size, int assoc) {
         
         printf("\n");
         }
+        // Print any valid Way 
         for (int k = 0; k < assoc; k++) {
             if (index[i]->ways[k]->mesi != INVALID) {
                 
@@ -785,6 +809,7 @@ void cache_statistics(int operation, int CacheResult, bool finished_program){
     return;
 }
 
+// Send inclusivity statements depending on given command
 void inclusive_print(int state){
 
     switch(state) {
