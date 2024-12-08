@@ -4,7 +4,19 @@
 # Except files/folders listed here
 # Put a " ! " in front of the file name and add it to the list to keep it in GitHub 
 !main.c
-!rwims.din
-!*.pdf
-!*.docx
-!documentation/
+!*.din
+!Sketches/
+!Testing_Code.c
+!defines.c
+!Other_dins/
+!4_ASSOCIATIVITY_TESTING
+!5_PLRU_TESTING/
+!6_WRITE_ALLOCATE/
+!7_MESI_TESTING/
+!8_CACHE_COHERENCE/
+!9_INCLUSIVITY/
+!10_WRITEONCE/
+!11_CACHE_STATS_TESTING/
+!11_CACHE_STATS_TESTING/Test_Cache_Stats.sh
+!12_CAPACITY_TESTING/
+!12_CAPACITY_TESTING/print.c
