@@ -5,6 +5,7 @@
 # Put a " ! " in front of the file name and add it to the list to keep it in GitHub 
 !main.c
 !*.din
+!
 !Sketches/
 !Testing_Code.c
 !defines.c
@@ -20,3 +21,4 @@
 !11_CACHE_STATS_TESTING/Test_Cache_Stats.sh
 !12_CAPACITY_TESTING/
 !12_CAPACITY_TESTING/print.c
+!documentation/
