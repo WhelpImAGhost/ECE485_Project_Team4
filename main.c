@@ -20,10 +20,10 @@
 #include "defines.c"
 
 /*####################### Global variables ###########################*/
-int mode = 0;       // Default mode for output is Silent
-uint32_t address;
-int operation;
-int old_mesi_state = INVALID; 
+int mode = 0;                  // Default mode for output is Silent
+uint32_t address;              // Input Address
+int operation;                 // Cache Operation
+int old_mesi_state = INVALID;
 int old_address = 0x00000000;
 int byte_select_bits = 0;
 int index_bits = 0;
@@ -341,7 +341,7 @@ int main(int argc, char *argv[]) {
                         if (old_mesi_state == MODIFIED){
                             printf("\nPrRd CAPACITY MISS @ 0x%08X\n", address);
                             printf("L2: EVICTLINE 0x%08X\n", (old_address));
-                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address)); //Writeback Old Address
+                            printf("L2: FlushWB @ 0x%08X, L2 MESI State: INVALID\n", (old_address));
                             printf("L2: BusRd @ 0x%08X, Snoop Result: %s, MESI State: %s\n", (address & ~(0x3F)), snoop_state, mesi_state);
                             if(strcmp(snoop_state,"HITM")==0){
                                 printf("Snooped Operation: FLushWB @0x%08X\n", address);
