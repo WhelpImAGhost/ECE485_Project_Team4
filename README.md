@@ -2,7 +2,7 @@
 ### Team 4
 - Chris Kane-Pardy
 - Ameer Melli
-- Caleb Monti
+- Violet Monti
 
 ## Description of main.c 
 The purpose of this code is to simulate a Lowest Level Cache (LLC) in a multi-level cache system with multiple processors. This simulation does not move data, but simply presents where and how data would be gathered, stored, moved, and deleted from the cache in response to various operations. By default, the simulated cache has a capacity of 16 MB, is 16-way set associative, and uses 64-byte lines. More specific details can be found in the [defines.c](https://github.com/WhelpImAGhost/ECE485_Project_Team4/blob/main/defines.c).
